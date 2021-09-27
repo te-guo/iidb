@@ -27,12 +27,12 @@ geometry: margin=2cm
 
 1. （`ORDER`）求 `order` 数大于 2 的 `customer` 的 `O_TOTALPRICE`
 2. （`LINEITEM`）对 `discount` 大于 0.02 的 `tax` 加 10%
-3. （`LINEITEM`）对所有 `tax` 小于 0.05 的 `item` 按照 `order` 计算平均 `discount`
+3. （`LINEITEM`）对所有 `tax` 小于 0.05 的物品（`L_ORDERKEY`,`L_LINENUMBER`）按照 `L_ORDERKEY` 计算平均 `discount`
    1. 对结果按平均 `discount` 从大到小排序
    2. 展示平均 `discount` 最大的 10 行
 4. （`LINEITEM`）求 `discount` 最大的 `item`，用 `L_ORDERKEY` 和 `L_LINENUMBER` 表示
-   1. 禁止使用 `agg` 操作
-5. （`PARTSUPP`）对于相同的 `part`，求所有供应商的 `quantity` 之和
+   1. 禁止使用 `agg` 操作（即需要用基本运算符表示MAX的逻辑）
+5. （`PARTSUPP`）对于相同的 `PS_PARTKEY`，求所有供应商的 `PS_AVAILQTY` 之和
 
 ## 多表查询 3*1pts
 
