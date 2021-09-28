@@ -13,11 +13,41 @@ geometry: margin=2cm
 
 同样地，你可以选择安装 PostgreSQL 或 MySQL 等数据库发行版，并在作业中注明使用的方言
 
+## MySQL 安装
+
+1. 对于 Linux 用户，使用包管理器安装，例如
+
+```bash
+sudo apt install mysql-server
+sudo systemctl start mysql
+```
+
+2. 对于 macOS 用户，使用 brew 或在官网下载安装镜像
+
+```bash
+brew install mysql
+brew services start mysql
+```
+
+3. 对于 Windows 用户，推荐在 WSL2 下操作
+
+```bash
+sudo apt install mysql-server
+sudo service mysql start
+```
+
+然后设置 MySQL 密码等，并连入
+
+```bash
+sudo mysql_secure_installation
+sudo mysql -uroot -p
+```
+
 ## 数据集 2pts
 
 我们使用 TPC-H 数据集作为作业的数据来源
 
-具体来说，我们提供了一些 csv 文件，你们需要首先将其导入 sqlite 数据库中
+具体来说，我们提供了一些 csv 文件，你们需要首先将其导入数据库中
 
 ## 单表查询 5*1pts
 
@@ -27,7 +57,7 @@ geometry: margin=2cm
 
 1. （`ORDER`）求 `order` 数大于 2 的 `customer` 的 `O_TOTALPRICE`
 2. （`LINEITEM`）对 `discount` 大于 0.02 的 `tax` 加 10%
-3. （`LINEITEM`）对所有 `tax` 小于 0.05 的物品（`L_ORDERKEY`,`L_LINENUMBER`）按照 `L_ORDERKEY` 计算平均 `discount`
+3. （`LINEITEM`）对所有 `tax` 小于 0.05 的物品（`L_ORDERKEY`, `L_LINENUMBER`）按照 `L_ORDERKEY` 计算平均 `discount`
    1. 对结果按平均 `discount` 从大到小排序
    2. 展示平均 `discount` 最大的 10 行
 4. （`LINEITEM`）求 `discount` 最大的 `item`，用 `L_ORDERKEY` 和 `L_LINENUMBER` 表示
@@ -45,3 +75,18 @@ geometry: margin=2cm
 2. （`CUSTOMER`, `ORDER`）求所有 `total_price` 小于 10000 的 `customer` 行
 
 3. 将 1 中表范围增加 `LINEITEM` 表，然后合理选择顺序使之执行最快
+
+## 提交
+
+我们期待一份纯文本格式提交，如 markdown 或 txt；二进制格式如 pdf 等也被允许，但请尽量附一份 txt 列出所用的 sql 语句，这是因为 pdf 的文本比较难用
+
+对于作业若有问题，可以在群聊/网络学堂提问，也可以通过邮箱
+
+1. 单表查询部分由刘奕好助教负责 liuyihao21@mails.tsinghua.edu.cn
+2. 多表查询部分由刘一芃助教负责 yipeng.liu@tuna.tsinghua.edu.cn
+
+## 一些可能有用的链接
+
+https://www.runoob.com/sqlite/sqlite-tutorial.html
+
+https://www.runoob.com/mysql/mysql-tutorial.html
