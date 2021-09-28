@@ -55,7 +55,7 @@ sudo mysql -uroot -p
 
 注意以下语句顺序执行，前序操作可能影响后续结果
 
-1. （`ORDER`）求 `order` 数大于 2 的 `customer` 的 `O_TOTALPRICE`
+1. （`ORDER`）求 `order` 数大于 20 的 `customer` 的 `O_TOTALPRICE`
 2. （`LINEITEM`）对 `discount` 大于 0.02 的 `tax` 加 10%
 3. （`LINEITEM`）对所有 `tax` 小于 0.05 的物品（`L_ORDERKEY`, `L_LINENUMBER`）按照 `L_ORDERKEY` 计算平均 `discount`
    1. 对结果按平均 `discount` 从大到小排序
