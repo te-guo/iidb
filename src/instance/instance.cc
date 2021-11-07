@@ -1,3 +1,5 @@
+#include <cassert>
+#include <iostream>
 #include "instance.h"
 
 namespace Neru {
@@ -6,9 +8,10 @@ Instance::Instance(std::string path) : _dir(path) {
   std::cout << _dir << std::endl;
   if (!std::filesystem::exists(_dir))
     std::filesystem::create_directories(_dir);
-  for (const auto &dir_entry : std::filesystem::directory_iterator(_dir))
+  for (const auto &dir_entry : std::filesystem::directory_iterator(_dir)){
     // TODO
     std::cout << dir_entry.path() << std::endl;
+  }
 }
 
 bool Instance::create(std::string tbName, Header header) {
@@ -16,7 +19,7 @@ bool Instance::create(std::string tbName, Header header) {
     return false;
   std::filesystem::create_directories(_dir / tbName);
   // TODO
-  _tables[tbName] = nullptr;
+  _tables[tbName] = std::shared_ptr<Table>(new Table((_dir / tbName).string(), header));
   return true;
 }
 

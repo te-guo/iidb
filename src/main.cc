@@ -1,7 +1,7 @@
 #include "field/fields.h"
-#include "instance/instance.h"
 #include "record/record.h"
 #include "table/table.h"
+#include "instance/instance.h"
 
 using namespace Neru;
 

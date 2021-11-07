@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(Neru)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/third_party/filesystem)
+
+file(GLOB_RECURSE TEST_FILESYSTEM_SRC ${PROJECT_SOURCE_DIR}/third_party/filesystem/*.cpp)
+add_executable(test_filesystem ${TEST_FILESYSTEM_SRC} ${PARSER_SRC})
+
+file(GLOB_RECURSE UTILS_SRC ${PROJECT_SOURCE_DIR}/third_party/filesystem/utils/*.cpp)
 
 file(GLOB_RECURSE NERU_SRC ${PROJECT_SOURCE_DIR}/src/*.cc)
-add_executable(neru ${NERU_SRC} ${PARSER_SRC})
+add_executable(neru ${NERU_SRC} ${UTILS_SRC} ${PARSER_SRC})

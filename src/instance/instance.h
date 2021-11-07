@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "bufmanager/bufmanager.h"
 #include "field/fields.h"
 #include "record/record.h"
 #include "table/table.h"

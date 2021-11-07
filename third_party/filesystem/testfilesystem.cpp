@@ -51,6 +51,7 @@ int main() {
 		cout << b[0] << ":" << b[1] << endl;
 		bpm->access(index);
 	}
+	bpm->close();
 	//程序结束前可以调用BufPageManager的某个函数将缓存中的内容写回
 	//具体的函数大家可以看看ppt或者程序的注释
 	return 0;

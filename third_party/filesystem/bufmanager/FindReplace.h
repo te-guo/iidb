@@ -1,8 +1,8 @@
 #ifndef BUF_SEARCH
 #define BUF_SEARCH
-#include "../utils/pagedef.h"
 #include <list>
 #include <algorithm>
+#include "../utils/pagedef.h"
 
 //template <int CAP_>
 /*

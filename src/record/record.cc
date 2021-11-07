@@ -33,6 +33,12 @@ uint8_t *Record::store(uint8_t *dst) const {
     case FieldType::DOUBLE:
       std::static_pointer_cast<DoubleField>(field)->store(pos);
       break;
+    case FieldType::FLOAT:
+      std::static_pointer_cast<FloatField>(field)->store(pos);
+      break;
+    case FieldType::STRING:
+      std::static_pointer_cast<StringField>(field)->store(pos);
+      break;
     default:
       __builtin_unreachable();
     }
@@ -60,6 +66,12 @@ const uint8_t *Record::load(const uint8_t *src, const Header &head) {
     }
     case FieldType::DOUBLE: {
       std::shared_ptr<DoubleField> field(new DoubleField(pos));
+      _fields.push_back(std::static_pointer_cast<Field>(field));
+      pos += field->size();
+      break;
+    }
+    case FieldType::STRING: {
+      std::shared_ptr<StringField> field(new StringField(pos));
       _fields.push_back(std::static_pointer_cast<Field>(field));
       pos += field->size();
       break;

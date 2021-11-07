@@ -1,10 +1,15 @@
 #pragma once
 
+#include "bufmanager/bufmanager.h"
 #include "record/record.h"
 
 namespace Neru {
 
 typedef std::pair<size_t, size_t> Entry;
+
+void store_int(uint8_t* &dst, uint32_t data);
+uint32_t load_int(uint8_t* &src);
+uint32_t read_int(uint8_t* src);
 
 class Table {
 public:
@@ -34,6 +39,8 @@ private:
   std::string _name;
 
   Header _head;
+
+  int fileID;
 
   const uint8_t *load(const uint8_t *src);
 

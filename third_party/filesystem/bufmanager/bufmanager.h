@@ -1,5 +1,5 @@
-#define CAP 60000
-#define MOD CAP
+#ifndef BUFMANAGER_H
+#define BUFMANAGER_H
 #include "../fileio/FileManager.h"
 #include <unordered_map>
 #include "FindReplace.h"
@@ -81,7 +81,12 @@ public:
 	T* getPage(int fileID, int pageID, int &index)
 	{
 		//TODO
-		//return address
+		if(hash.count(std::make_pair(fileID, pageID))){
+			index = hash[std::make_pair(fileID, pageID)];
+			return addr[index];
+		}
+		else
+			return allocPage(fileID, pageID, index, true);
 	}
 
 	// fetch the start address of page index
@@ -94,15 +99,16 @@ public:
 		}
 		else
 		{
-			if (dirty[index])
-			{
-				auto it = hash.begin();
-				for (; it != hash.end(); ++it)
-					if (it->second == index)
-						break;
+			auto it = hash.begin();
+			for (; it != hash.end(); ++it)
+				if (it->second == index)
+					break;
+			if (dirty[index]){
 				fileManager->writePage(it->first.first, it->first.second, addr[index], 0);
 				dirty[index] = false;
 			}
+			if(it != hash.end())
+				hash.erase(it);
 		}
 		hash[std::make_pair(fileID, pageID)] = index;
 		return addr[index];
@@ -154,6 +160,14 @@ public:
 	{
 		//TODO
 		//HINT: using fileManager->writePage
+		if(dirty[index]){
+			auto it = hash.begin();
+			for (; it != hash.end(); ++it)
+				if (it->second == index)
+					break;
+			fileManager->writePage(it->first.first, it->first.second, addr[index], 0);
+			dirty[index] = false;
+		}
 	}
 	/*
 	 * close
@@ -171,4 +185,10 @@ public:
 	{
 		return new T[(PAGE_SIZE / sizeof(T))];
 	}
+
+	~BufPageManager(){
+		this->close();
+	}
 };
+
+#endif
