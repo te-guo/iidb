@@ -20,7 +20,7 @@ const uint8_t *FloatField::load(const uint8_t *src) {
 
 FieldType FloatField::type() const { return FieldType::FLOAT; }
 
-size_t FloatField::size() const { return sizeof(double); }
+size_t FloatField::size() const { return sizeof(float); }
 
 std::string FloatField::info() const {
   return std::to_string(this->size()) +

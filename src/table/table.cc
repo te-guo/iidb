@@ -151,8 +151,9 @@ Entry Table::insert(std::shared_ptr<Record> record) {
   }
 }
 
-bool Table::update(Entry dst, std::shared_ptr<Record> record) {
+Entry Table::update(Entry dst, std::shared_ptr<Record> record) {
   // TODO
+  /*
   int buf_index;
   uint8_t* buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
   uint8_t* pos = buf + 1;
@@ -192,7 +193,8 @@ bool Table::update(Entry dst, std::shared_ptr<Record> record) {
   store_int(ppos, slotID);
   store_int(ppos, available);
   bpm.markDirty(buf_index);
-  return true;
+  return true;*/
+  return dst;
 }
 
 bool Table::remove(Entry dst) {
