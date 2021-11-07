@@ -16,7 +16,7 @@ public:
 
   Entry insert(std::shared_ptr<Record> record);
 
-  bool update(Entry dst, std::shared_ptr<Record> record);
+  Entry update(Entry dst, std::shared_ptr<Record> record);
 
   bool remove(Entry dst);
 

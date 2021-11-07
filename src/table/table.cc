@@ -50,9 +50,9 @@ Entry Table::insert(std::shared_ptr<Record> record) {
   return {0, 0};
 }
 
-bool Table::update(Entry dst, std::shared_ptr<Record> record) {
+Entry Table::update(Entry dst, std::shared_ptr<Record> record) {
   // TODO
-  return false;
+  return dst;
 }
 
 bool Table::remove(Entry dst) {
