@@ -283,7 +283,7 @@ bool Table::remove(Entry dst) {
   return !exception;
 }
 
-std::vector<std::shared_ptr<Record>> Table::select() {
+std::vector<std::pair<Entry, std::shared_ptr<Record>>> Table::select() {
   // TODO
   std::vector<std::shared_ptr<Record>> selected;
   int pageID = 1;
