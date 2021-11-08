@@ -25,7 +25,7 @@ public:
 
   bool remove(Entry dst);
 
-  std::vector<std::shared_ptr<Record>> select();
+  std::vector<std::pair<Entry, std::shared_ptr<Record>>> select();
 
   Header head() const;
 
