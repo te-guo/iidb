@@ -7,7 +7,7 @@ using namespace Neru;
 
 void field_test() {
   std::cerr << "---Field---" << std::endl;
-  std::shared_ptr<uint8_t> buf(new uint8_t[640]);
+  std::shared_ptr<uint8_t[]> buf(new uint8_t[640]);
   IntField int_field1(3);
   int_field1.store(buf.get());
   IntField int_field2(buf.get());
@@ -30,7 +30,7 @@ void field_test() {
 
 void record_test() {
   std::cerr << "---Record---" << std::endl;
-  std::shared_ptr<uint8_t> buf(new uint8_t[640]);
+  std::shared_ptr<uint8_t[]> buf(new uint8_t[640]);
   Record record1({std::make_shared<IntField>(3),
                   std::make_shared<FloatField>(3.14),
                   std::make_shared<DoubleField>(3.1415926)});
