@@ -1,3 +1,4 @@
+#include <filesystem>
 #include "field/string_field.h"
 #include "record/record.h"
 #include "table.h"
@@ -17,6 +18,9 @@ uint32_t load_int(uint8_t* &src){
   src += sizeof(uint32_t);
   return data;
 }
+void write_int(uint8_t* dst, uint32_t data){
+  std::copy_n((const uint8_t*)&data, sizeof(uint32_t), dst);
+}
 uint32_t read_int(uint8_t* src){
   uint32_t data;
   std::copy_n(src, sizeof(uint32_t), &data);
@@ -29,6 +33,10 @@ BufPageManager<T> bpm(fm);
 Table::Table(std::string name, Header head) : _name(name), _head(head) {
   fm->createFile(_name.c_str());
 	fm->openFile(_name.c_str(), fileID);
+  int buf_index;
+  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, 0, buf_index);
+  this->store(buf);
+  bpm.markDirty(buf_index);
 }
 
 Table::Table(const uint8_t *src) {
@@ -37,10 +45,19 @@ Table::Table(const uint8_t *src) {
 	fm->openFile(_name.c_str(), fileID);
 }
 
+Table::Table(const std::filesystem::path path){
+  int fileID;
+  fm->createFile(path.c_str());
+  fm->openFile(path.c_str(), fileID);
+  int buf_index;
+  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, 0, buf_index);
+  this->load(buf);
+  bpm.access(buf_index);
+}
+
 uint8_t *Table::store(uint8_t *dst) const {
   // TODO
   uint8_t* pos = dst;
-  store_int(pos, 0);
   store_string(pos, _name);
   store_int(pos, _head.size());
   for (const auto &type : _head)
@@ -48,10 +65,10 @@ uint8_t *Table::store(uint8_t *dst) const {
       case FieldType::INT:
         *(pos++) = 0;
         break;
-      case FieldType::DOUBLE:
+      case FieldType::FLOAT:
         *(pos++) = 1;
         break;
-      case FieldType::FLOAT:
+      case FieldType::DOUBLE:
         *(pos++) = 2;
         break;
       case FieldType::STRING:
@@ -60,15 +77,12 @@ uint8_t *Table::store(uint8_t *dst) const {
       default:
         __builtin_unreachable();
     }
-  int32_t page_n = pos - dst + PAGE_SIZE - 1 >> PAGE_SIZE_IDX;
-  store_int(dst, page_n);
-  return dst + (page_n << PAGE_SIZE_IDX);
+  return dst + PAGE_SIZE;
 }
 
 const uint8_t *Table::load(const uint8_t *src) {
   // TODO
   uint8_t* pos = (uint8_t*)src;
-  int32_t page_n = load_int(pos);
   _name = load_string(pos);
   int32_t header_size = load_int(pos);
   _head.resize(header_size);
@@ -78,10 +92,10 @@ const uint8_t *Table::load(const uint8_t *src) {
         _head[i] = FieldType::INT;
         break;
       case 1:
-        _head[i] = FieldType::DOUBLE;
+        _head[i] = FieldType::FLOAT;
         break;
       case 2:
-        _head[i] = FieldType::FLOAT;
+        _head[i] = FieldType::DOUBLE;
         break;
       case 3:
         _head[i] = FieldType::STRING;
@@ -89,8 +103,7 @@ const uint8_t *Table::load(const uint8_t *src) {
       default:
         __builtin_unreachable();
     }
-
-  return src + (page_n << PAGE_SIZE_IDX);
+  return src + PAGE_SIZE;
 }
 
 Header Table::head() const { return _head; }
@@ -125,9 +138,8 @@ std::ostream &operator<<(std::ostream &os, const Table &table) {
 Entry Table::insert(std::shared_ptr<Record> record) {
   // TODO
   int buf_index;
-  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, 0, buf_index);
-  int32_t pageID = read_int(buf);
-  bpm.access(buf_index);
+  uint8_t* buf;
+  int32_t pageID = 1;
 
   for(int record_size = record->size(); ; pageID++){
     buf = (uint8_t*)bpm.getPage(fileID, pageID, buf_index);
@@ -136,13 +148,15 @@ Entry Table::insert(std::shared_ptr<Record> record) {
     int available = load_int(pos);
     if(slotID == 0)
       available = PAGE_SIZE - 2 * sizeof(uint32_t) - 1;
-    if(available >= record_size){
+    if(available >= record_size + 1){
       for(int i = 0; i < slotID; i++)
-        pos += Record(pos, _head).size();
+        if(*(pos++) == 1)
+          pos += Record(pos, _head).size();
+      *(pos++) = 1;
       record->store(pos);
-      *(buf++) = 1;
-      store_int(buf, slotID + 1);
-      store_int(buf, available - record_size);
+      *buf = 1;
+      write_int(buf + 1, slotID + 1);
+      write_int(buf + 5, available - record_size - 1);
       bpm.markDirty(buf_index);
       return {pageID, slotID};
     }
@@ -153,7 +167,71 @@ Entry Table::insert(std::shared_ptr<Record> record) {
 
 Entry Table::update(Entry dst, std::shared_ptr<Record> record) {
   // TODO
-  /*
+  int buf_index;
+  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
+  uint8_t* pos = buf + 1;
+  int slotID = load_int(pos);
+  if(dst.second >= slotID){
+      bpm.access(buf_index);
+      return insert(record);
+  }
+  int available = load_int(pos);
+  if(slotID == 0)
+    available = PAGE_SIZE - 2 * sizeof(uint32_t) - 1;
+  bool exception = false;
+  int record_size = record->size();
+  
+  uint8_t* page = new uint8_t[PAGE_SIZE], *ppos = page + 2 * sizeof(uint32_t) + 1;
+  for(int i = 0; i < dst.second; i++)
+    if(*(pos++) == 1){
+      Record tmp;
+      pos = (uint8_t*)tmp.load(pos, _head);
+      *(ppos++) = 1;
+      ppos = tmp.store(ppos);
+    }
+    else
+      *(ppos++) = 0;
+  if(*(pos++) == 1){
+    Record tmp;
+    pos = (uint8_t*)tmp.load(pos, _head);
+    if(tmp.size() + available < record_size){
+      available += tmp.size();
+      *(ppos++) = 0;
+      exception = true;
+    }
+    else{
+      available += tmp.size() - record_size;
+      *(ppos++) = 1;
+      ppos = record->store(ppos);
+    }
+  }
+  else{
+    *(ppos++) = 0;
+    exception = true;
+  }
+  for(int i = dst.second + 1; i < slotID; i++)
+    if(*(pos++) == 1){
+      Record tmp;
+      pos = (uint8_t*)tmp.load(pos, _head);
+      *(ppos++) = 1;
+      ppos = tmp.store(ppos);
+    }
+    else
+      *(ppos++) = 0;
+  *page = 1;
+  write_int(page + 1, slotID);
+  write_int(page + 5, available);
+  copy_n(page, PAGE_SIZE, buf);
+  delete page;
+  bpm.markDirty(buf_index);
+  if(exception)
+    return insert(record);
+  else
+    return dst;
+}
+
+bool Table::remove(Entry dst) {
+  // TODO
   int buf_index;
   uint8_t* buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
   uint8_t* pos = buf + 1;
@@ -164,79 +242,66 @@ Entry Table::update(Entry dst, std::shared_ptr<Record> record) {
   }
   int available = load_int(pos);
   if(slotID == 0)
-    available = PAGE_SIZE - 2 * sizeof(uint32_t);
-  int record_size = record->size();
+    available = PAGE_SIZE - 2 * sizeof(uint32_t) - 1;
+  bool exception = false;
   
   uint8_t* page = new uint8_t[PAGE_SIZE], *ppos = page + 2 * sizeof(uint32_t) + 1;
-  for(int i = 0; i < dst.second; i++){
-    Record tmp;
-    pos = (uint8_t*)tmp.load(pos, _head);
-    ppos = tmp.store(ppos);
-  }
-  {
-    Record tmp;
-    pos = (uint8_t*)tmp.load(pos, _head);
-    if(tmp.size() + available < record_size){
-      bpm.access(buf_index);
-      return false;
+  for(int i = 0; i < dst.second; i++)
+    if(*(pos++) == 1){
+      Record tmp;
+      pos = (uint8_t*)tmp.load(pos, _head);
+      *(ppos++) = 1;
+      ppos = tmp.store(ppos);
     }
     else
-      available += tmp.size() - record_size;
-    ppos = record->store(ppos);
-  }
-  for(int i = dst.second + 1; i < slotID; i++){
-    Record tmp;
-    pos = (uint8_t*)tmp.load(pos, _head);
-    ppos = tmp.store(ppos);
-  }
-  *(ppos++) = 1;
-  store_int(ppos, slotID);
-  store_int(ppos, available);
-  bpm.markDirty(buf_index);
-  return true;*/
-  return dst;
-}
-
-bool Table::remove(Entry dst) {
-  // TODO
-  int buf_index;
-  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
-  uint8_t* pos = buf;
-  int slotID = load_int(pos);
-  if(dst.second >= slotID){
-      bpm.access(buf_index);
-      return false;
-  }
-  int available = load_int(pos);
-  if(slotID == 0)
-    available = PAGE_SIZE - 2 * sizeof(uint32_t);
-  
-  uint8_t* page = new uint8_t[PAGE_SIZE], *ppos = page + 2 * sizeof(uint32_t);
-  for(int i = 0; i < dst.second; i++){
-    Record tmp;
-    pos = (uint8_t*)tmp.load(pos, _head);
-    ppos = tmp.store(ppos);
-  }
-  {
+      *(ppos++) = 0;
+  if(*(pos++) == 1){
     Record tmp;
     pos = (uint8_t*)tmp.load(pos, _head);
     available += tmp.size();
+    *(ppos++) = 0;
   }
-  for(int i = dst.second + 1; i < slotID; i++){
-    Record tmp;
-    pos = (uint8_t*)tmp.load(pos, _head);
-    ppos = tmp.store(ppos);
+  else{
+    *(ppos++) = 0;
+    exception = true;
   }
-  store_int(buf, slotID - 1);
-  store_int(buf, available);
+  for(int i = dst.second + 1; i < slotID; i++)
+    if(*(pos++) == 1){
+      Record tmp;
+      pos = (uint8_t*)tmp.load(pos, _head);
+      *(ppos++) = 1;
+      ppos = tmp.store(ppos);
+    }
+    else
+      *(ppos++) = 0;
+  *page = 1;
+  write_int(page + 1, slotID);
+  write_int(page + 5, available);
+  copy_n(page, PAGE_SIZE, buf);
+  delete page;
   bpm.markDirty(buf_index);
-  return true;
+  return !exception;
 }
 
 std::vector<std::shared_ptr<Record>> Table::select() {
   // TODO
   std::vector<std::shared_ptr<Record>> selected;
-  return {};
+  int pageID = 1;
+  while(true){
+    int buf_index;
+    uint8_t* buf = (uint8_t*)bpm.getPage(fileID, pageID, buf_index), *pos = buf;
+    if(*(pos++) != 1)
+      break;
+    int slotID = load_int(pos);
+    pos += 4;
+    for(int i = 0; i < slotID; i++)
+      if(*(pos++) == 1){
+        selected.push_back(std::shared_ptr<Record>(new Record(pos, _head)));
+        pos += selected.back()->size();
+      }
+    bpm.access(buf_index);
+  }
+  return selected;
 }
 
 } // namespace Neru

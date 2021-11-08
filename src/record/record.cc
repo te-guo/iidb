@@ -36,9 +36,6 @@ uint8_t *Record::store(uint8_t *dst) const {
     case FieldType::DOUBLE:
       std::static_pointer_cast<DoubleField>(field)->store(pos);
       break;
-    case FieldType::FLOAT:
-      std::static_pointer_cast<FloatField>(field)->store(pos);
-      break;
     case FieldType::STRING:
       std::static_pointer_cast<StringField>(field)->store(pos);
       break;

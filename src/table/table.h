@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include "bufmanager/bufmanager.h"
 #include "record/record.h"
 
@@ -9,6 +10,7 @@ typedef std::pair<size_t, size_t> Entry;
 
 void store_int(uint8_t* &dst, uint32_t data);
 uint32_t load_int(uint8_t* &src);
+void write_int(uint8_t* dst, uint32_t data);
 uint32_t read_int(uint8_t* src);
 
 class Table {
@@ -18,6 +20,8 @@ public:
   Table(std::string name, Header head);
 
   Table(const uint8_t *src);
+
+  Table(const std::filesystem::path path);
 
   Entry insert(std::shared_ptr<Record> record);
 

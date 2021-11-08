@@ -1,8 +1,15 @@
-#include <cassert>
 #include <iostream>
+#include <climits>
+#include <cassert>
 #include "instance.h"
+#include "bufmanager/bufmanager.h"
+
+typedef unsigned int T;
 
 namespace Neru {
+
+extern FileManager* fm;
+extern BufPageManager<T> bpm;
 
 Instance::Instance(std::string path) : _dir(path) {
   std::cout << _dir << std::endl;
@@ -11,6 +18,7 @@ Instance::Instance(std::string path) : _dir(path) {
   for (const auto &dir_entry : std::filesystem::directory_iterator(_dir)){
     // TODO
     std::cout << dir_entry.path() << std::endl;
+    _tables[dir_entry.path().filename()] = std::shared_ptr<Table>(new Table(dir_entry.path()));
   }
 }
 
