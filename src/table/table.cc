@@ -60,7 +60,7 @@ bool Table::remove(Entry dst) {
   return false;
 }
 
-std::vector<std::shared_ptr<Record>> Table::select() {
+std::vector<std::pair<Entry, std::shared_ptr<Record>>> Table::select() {
   // TODO
   return {};
 }

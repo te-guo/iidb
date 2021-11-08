@@ -73,34 +73,45 @@ bool Instance::test(size_t seed) {
   }
   std::cerr << *records[0] << std::endl;
   std::vector<Entry> entries;
-  for (size_t i = 0; i < n; ++i)
-    entries.push_back(_tables["foo"]->insert(records[i]));
+  std::map<Entry, std::shared_ptr<Record>> entry_map;
+  for (size_t i = 0; i < n; ++i) {
+    Entry entry = _tables["foo"]->insert(records[i]);
+    entries.push_back(entry);
+    entry_map[entry] = records[i];
+  }
+  for (auto kv : entry_map)
+    std::cerr << *kv.second << std::endl;
+
   for (size_t i = 0; i < m; ++i) {
     size_t idx = rand() % n;
-    records[idx] = std::make_shared<Record>();
+    std::shared_ptr<Record> record(std::make_shared<Record>());
     for (size_t j = 0; j < head1.size(); ++j) {
       switch (head1[j]) {
       case FieldType::INT:
-        records[idx]->append(std::make_shared<IntField>(rand()));
+        record->append(std::make_shared<IntField>(rand()));
         break;
       case FieldType::FLOAT:
-        records[idx]->append(
-            std::make_shared<FloatField>(rand() / (INT_MAX + 1.0)));
+        record->append(std::make_shared<FloatField>(rand() / (INT_MAX + 1.0)));
         break;
       case FieldType::DOUBLE:
-        records[idx]->append(
-            std::make_shared<DoubleField>(rand() / (INT_MAX + 1.0)));
+        record->append(std::make_shared<DoubleField>(rand() / (INT_MAX + 1.0)));
         break;
       default:
         __builtin_unreachable();
       }
     }
-    entries[idx] = _tables["foo"]->update(entries[idx], records[idx]);
+    Entry entry = _tables["foo"]->update(entries[idx], record);
+    entry_map.erase(entries[idx]);
+    entries[idx] = entry;
+    entry_map[entry] = record;
   }
-  std::vector<std::shared_ptr<Record>> results = _tables["foo"]->select();
+  std::vector<std::pair<Entry, std::shared_ptr<Record>>> results =
+      _tables["foo"]->select();
   assert(results.size() == n);
-  for (size_t i = 0; i < n; ++i)
-    assert(*records[i] == *results[i]);
+  for (size_t i = 0; i < n; ++i) {
+    assert(entry_map.count(results[i].first) == 1);
+    assert(*results[i].second == *entry_map[results[i].first]);
+  }
   std::cerr << "Test Foo passed!" << std::endl;
   // for (size_t i = 0; i < n; ++i) {
   //   records.push_back(std::make_shared<Record>());
