@@ -2,7 +2,7 @@
 
 namespace Neru {
 
-FloatField::FloatField(double data) : _data(data) {}
+FloatField::FloatField(float data) : _data(data) {}
 
 FloatField::FloatField(const uint8_t *src) { this->load(src); }
 
