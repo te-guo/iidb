@@ -37,7 +37,7 @@ public:
   friend std::ostream &operator<<(std::ostream &os, const FloatField &field);
 
 private:
-  double _data{};
+  float _data{};
 };
 
 } // namespace Neru

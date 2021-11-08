@@ -23,6 +23,8 @@ public:
 
   Table(const std::filesystem::path path);
 
+  void document();
+
   Entry insert(std::shared_ptr<Record> record);
 
   Entry update(Entry dst, std::shared_ptr<Record> record);

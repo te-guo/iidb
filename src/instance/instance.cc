@@ -18,7 +18,7 @@ Instance::Instance(std::string path) : _dir(path) {
   for (const auto &dir_entry : std::filesystem::directory_iterator(_dir)){
     // TODO
     std::cout << dir_entry.path() << std::endl;
-    _tables[dir_entry.path().filename()] = std::shared_ptr<Table>(new Table(dir_entry.path()));
+    _tables[dir_entry.path().filename()] = std::shared_ptr<Table>(new Table(dir_entry.path() / dir_entry.path().filename()));
   }
 }
 
@@ -27,7 +27,8 @@ bool Instance::create(std::string tbName, Header header) {
     return false;
   std::filesystem::create_directories(_dir / tbName);
   // TODO
-  _tables[tbName] = std::shared_ptr<Table>(new Table((_dir / tbName).string(), header));
+  _tables[tbName] = std::shared_ptr<Table>(new Table((_dir / tbName / tbName).string(), header));
+  _tables[tbName]->document();
   return true;
 }
 

@@ -183,7 +183,7 @@ public:
 
 	T* allocMem()
 	{
-		return new T[(PAGE_SIZE / sizeof(T))];
+		return new T[(PAGE_SIZE / sizeof(T))]();
 	}
 
 	~BufPageManager(){

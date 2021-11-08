@@ -39,6 +39,7 @@ public:
 	 * FilManager构造函数
 	 */
 	FileManager() {
+  		MyBitMap::initConst();
 		fm = new MyBitMap(MAX_FILE_NUM, 1);
 		tm = new MyBitMap(MAX_TYPE_NUM, 1);
 	}

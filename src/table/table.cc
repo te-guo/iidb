@@ -14,7 +14,7 @@ void store_int(uint8_t* &dst, uint32_t data){
 }
 uint32_t load_int(uint8_t* &src){
   uint32_t data;
-  std::copy_n(src, sizeof(uint32_t), &data);
+  std::copy_n(src, sizeof(uint32_t), (uint8_t*)&data);
   src += sizeof(uint32_t);
   return data;
 }
@@ -23,36 +23,33 @@ void write_int(uint8_t* dst, uint32_t data){
 }
 uint32_t read_int(uint8_t* src){
   uint32_t data;
-  std::copy_n(src, sizeof(uint32_t), &data);
+  std::copy_n(src, sizeof(uint32_t), (uint8_t*)&data);
   return data;
 }
 
 FileManager* fm = new FileManager();
 BufPageManager<T> bpm(fm);
 
-Table::Table(std::string name, Header head) : _name(name), _head(head) {
+Table::Table(std::string name, Header head) : _name(name), _head(head) { this->fileID = -1; }
+
+Table::Table(const uint8_t *src) { this->load(src); this->fileID = -1; }
+
+Table::Table(const std::filesystem::path path){
+  fm->createFile(path.c_str());
+  fm->openFile(path.c_str(), this->fileID);
+  int buf_index;
+  uint8_t* buf = (uint8_t*)bpm.getPage(this->fileID, 0, buf_index);
+  this->load(buf);
+  bpm.access(buf_index);
+}
+
+void Table::document(){
   fm->createFile(_name.c_str());
 	fm->openFile(_name.c_str(), fileID);
   int buf_index;
   uint8_t* buf = (uint8_t*)bpm.getPage(fileID, 0, buf_index);
   this->store(buf);
   bpm.markDirty(buf_index);
-}
-
-Table::Table(const uint8_t *src) {
-  this->load(src);
-  fm->createFile(_name.c_str());
-	fm->openFile(_name.c_str(), fileID);
-}
-
-Table::Table(const std::filesystem::path path){
-  int fileID;
-  fm->createFile(path.c_str());
-  fm->openFile(path.c_str(), fileID);
-  int buf_index;
-  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, 0, buf_index);
-  this->load(buf);
-  bpm.access(buf_index);
 }
 
 uint8_t *Table::store(uint8_t *dst) const {
@@ -77,7 +74,7 @@ uint8_t *Table::store(uint8_t *dst) const {
       default:
         __builtin_unreachable();
     }
-  return dst + PAGE_SIZE;
+  return pos;
 }
 
 const uint8_t *Table::load(const uint8_t *src) {
@@ -103,7 +100,7 @@ const uint8_t *Table::load(const uint8_t *src) {
       default:
         __builtin_unreachable();
     }
-  return src + PAGE_SIZE;
+  return pos + header_size;
 }
 
 Header Table::head() const { return _head; }
@@ -135,53 +132,68 @@ std::ostream &operator<<(std::ostream &os, const Table &table) {
   return os << table.info();
 }
 
+int father_page(int pageID){
+  return (pageID - 1 >> 11 << 11) + 1;
+}
+int page_index(int pageID){
+  return pageID - father_page(pageID);
+}
+
 Entry Table::insert(std::shared_ptr<Record> record) {
   // TODO
+  if(fileID == -1) this->document();
   int buf_index;
   uint8_t* buf;
-  int32_t pageID = 1;
-
-  for(int record_size = record->size(); ; pageID++){
+  int record_size = record->size();
+  for(int32_t pageID = 1; ; pageID += 2048){
     buf = (uint8_t*)bpm.getPage(fileID, pageID, buf_index);
-    uint8_t* pos = buf + 1;
-    int slotID = load_int(pos);
-    int available = load_int(pos);
-    if(slotID == 0)
-      available = PAGE_SIZE - 2 * sizeof(uint32_t) - 1;
-    if(available >= record_size + 1){
-      for(int i = 0; i < slotID; i++)
-        if(*(pos++) == 1)
-          pos += Record(pos, _head).size();
-      *(pos++) = 1;
-      record->store(pos);
-      *buf = 1;
-      write_int(buf + 1, slotID + 1);
-      write_int(buf + 5, available - record_size - 1);
+    if(read_int(buf) == 0){
+      write_int(buf, 1);
+      for(int i = 4; i < PAGE_SIZE; i += 4)
+        write_int(buf + i, PAGE_SIZE - 5);
       bpm.markDirty(buf_index);
-      return {pageID, slotID};
     }
-    else
-      bpm.access(buf_index);
+    for(int i = 4, available; i < PAGE_SIZE; i += 4)
+      if((available = read_int(buf + i)) >= record_size + 1){
+        bpm.access(buf_index);
+        pageID += i >> 2;
+        buf = (uint8_t*)bpm.getPage(fileID, pageID, buf_index);
+        uint8_t* pos = buf + 1;
+        int slotID = load_int(pos);
+        pos = buf + PAGE_SIZE - available;
+        *(pos++) = 1;
+        record->store(pos);
+        *buf = 1;
+        write_int(buf + 1, slotID + 1);
+        bpm.markDirty(buf_index);
+        buf = (uint8_t*)bpm.getPage(fileID, father_page(pageID), buf_index);
+        write_int(buf + i, available - record_size - 1);
+        bpm.markDirty(buf_index);
+        return {pageID, slotID};
+      }
+    bpm.access(buf_index);
   }
 }
 
 Entry Table::update(Entry dst, std::shared_ptr<Record> record) {
   // TODO
+  if(fileID == -1) this->document();
   int buf_index;
-  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
+  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, father_page(dst.first), buf_index);
+  int available = read_int(buf + (page_index(dst.first) << 2));
+  bpm.access(father_page(dst.first));
+
+  buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
   uint8_t* pos = buf + 1;
   int slotID = load_int(pos);
   if(dst.second >= slotID){
       bpm.access(buf_index);
       return insert(record);
   }
-  int available = load_int(pos);
-  if(slotID == 0)
-    available = PAGE_SIZE - 2 * sizeof(uint32_t) - 1;
   bool exception = false;
   int record_size = record->size();
   
-  uint8_t* page = new uint8_t[PAGE_SIZE], *ppos = page + 2 * sizeof(uint32_t) + 1;
+  uint8_t* page = new uint8_t[PAGE_SIZE], *ppos = page + 5;
   for(int i = 0; i < dst.second; i++)
     if(*(pos++) == 1){
       Record tmp;
@@ -220,10 +232,12 @@ Entry Table::update(Entry dst, std::shared_ptr<Record> record) {
       *(ppos++) = 0;
   *page = 1;
   write_int(page + 1, slotID);
-  write_int(page + 5, available);
   copy_n(page, PAGE_SIZE, buf);
   delete page;
   bpm.markDirty(buf_index);
+  buf = (uint8_t*)bpm.getPage(fileID, father_page(dst.first), buf_index);
+  write_int(buf + (page_index(dst.first) << 2), available);
+  bpm.markDirty(father_page(dst.first));
   if(exception)
     return insert(record);
   else
@@ -232,20 +246,22 @@ Entry Table::update(Entry dst, std::shared_ptr<Record> record) {
 
 bool Table::remove(Entry dst) {
   // TODO
+  if(fileID == -1) this->document();
   int buf_index;
-  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
+  uint8_t* buf = (uint8_t*)bpm.getPage(fileID, father_page(dst.first), buf_index);
+  int available = read_int(buf + (page_index(dst.first) << 2));
+  bpm.access(father_page(dst.first));
+
+  buf = (uint8_t*)bpm.getPage(fileID, dst.first, buf_index);
   uint8_t* pos = buf + 1;
   int slotID = load_int(pos);
   if(dst.second >= slotID){
       bpm.access(buf_index);
       return false;
   }
-  int available = load_int(pos);
-  if(slotID == 0)
-    available = PAGE_SIZE - 2 * sizeof(uint32_t) - 1;
   bool exception = false;
   
-  uint8_t* page = new uint8_t[PAGE_SIZE], *ppos = page + 2 * sizeof(uint32_t) + 1;
+  uint8_t* page = new uint8_t[PAGE_SIZE], *ppos = page + 5;
   for(int i = 0; i < dst.second; i++)
     if(*(pos++) == 1){
       Record tmp;
@@ -276,28 +292,31 @@ bool Table::remove(Entry dst) {
       *(ppos++) = 0;
   *page = 1;
   write_int(page + 1, slotID);
-  write_int(page + 5, available);
   copy_n(page, PAGE_SIZE, buf);
   delete page;
   bpm.markDirty(buf_index);
+  buf = (uint8_t*)bpm.getPage(fileID, father_page(dst.first), buf_index);
+  write_int(buf + (page_index(dst.first) << 2), available);
+  bpm.markDirty(father_page(dst.first));
   return !exception;
 }
 
 std::vector<std::pair<Entry, std::shared_ptr<Record>>> Table::select() {
   // TODO
-  std::vector<std::shared_ptr<Record>> selected;
-  int pageID = 1;
-  while(true){
+  if(fileID == -1) this->document();
+  std::vector<std::pair<Entry, std::shared_ptr<Record>>> selected;
+  for(int pageID = 1; ; pageID++){
+    if(pageID == father_page(pageID))
+      continue;
     int buf_index;
     uint8_t* buf = (uint8_t*)bpm.getPage(fileID, pageID, buf_index), *pos = buf;
     if(*(pos++) != 1)
       break;
     int slotID = load_int(pos);
-    pos += 4;
     for(int i = 0; i < slotID; i++)
       if(*(pos++) == 1){
-        selected.push_back(std::shared_ptr<Record>(new Record(pos, _head)));
-        pos += selected.back()->size();
+        selected.push_back(make_pair((Entry){pageID, i}, std::shared_ptr<Record>(new Record(pos, _head))));
+        pos += selected.back().second->size();
       }
     bpm.access(buf_index);
   }
