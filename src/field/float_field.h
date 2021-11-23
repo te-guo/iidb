@@ -8,7 +8,7 @@ class FloatField : public Field {
 public:
   FloatField() = default;
 
-  explicit FloatField(double data);
+  explicit FloatField(float data);
 
   explicit FloatField(const uint8_t *src);
 
