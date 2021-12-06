@@ -44,14 +44,16 @@ namespace Neru {
             }
         if (last_slot == PAGE_SIZE)
             throw std::runtime_error("DataFile: Last Page empty!");
-        _front = {last_page, last_slot};
+        _front = {last_page, last_slot + 1};
         //        std::cerr << "Front: " << _front << std::endl;
         for (size_t i = 0; i <= last_page; ++i) {
             auto free = this->get(i)->free();
-            if (i == last_page)
-                free.pop_back();
-            for (auto slot : free)
+            for (auto slot : free) {
+                if (i == last_page)
+                    if (slot >= last_slot)
+                        continue;
                 _free.push({i, slot});
+            }
         }
         //        std::cerr << "Free: " << std::endl;
         //        while (!_free.empty()) {
