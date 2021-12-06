@@ -15,7 +15,7 @@ namespace Neru {
     std::vector<size_t> DataPage::free() const {
         std::vector<size_t> _free;
         for (size_t i = 0; i < _capacity; ++i)
-            if (_flag->test(i))
+            if (!_flag->test(i))
                 _free.push_back(i);
         return _free;
     }
