@@ -72,6 +72,35 @@ namespace Neru {
                 _info += ' ' + std::to_string(i);
         return _info;
     }
+    void IndexFile::debug(){
+        std::cerr<<"IndexFile:"<<std::endl;
+        std::cerr<<"  root: "<<root()<<std::endl;
+        for(size_t i = 1; i < _pages.size(); i++)
+            if(page_type(i) == IndexPageType::LEAF){
+                std::cerr<<"Page "<<i<<": leaf"<<std::endl;
+                std::cerr<<"  id: "<<get_leaf_page(i)->id()<<", parent: "<<get_leaf_page(i)->parent()<<std::endl;
+                std::cerr<<"  count: "<<get_leaf_page(i)->count()<<std::endl;
+                std::cerr<<"  prev_page: "<<get_leaf_page(i)->prev_page()<<", next_page: "<<get_leaf_page(i)->next_page()<<std::endl;
+                for(size_t j = 0; j < get_leaf_page(i)->count(); j++){
+                    std::cerr<<"   key #"<<j<<": "<<*(get_leaf_page(i)->key(j))<<std::endl;
+                    std::cerr<<"   entry #"<<j<<": ("<<get_leaf_page(i)->entry(j).page()<<", "<<get_leaf_page(i)->entry(j).slot()<<")"<<std::endl;
+                }
+            }
+            else if(page_type(i) == IndexPageType::INTERNAL){
+                std::cerr<<"Page "<<i<<": internal"<<std::endl;
+                std::cerr<<"  id: "<<get_internal_page(i)->id()<<", parent: "<<get_internal_page(i)->parent()<<std::endl;
+                std::cerr<<"  count: "<<get_internal_page(i)->count()<<std::endl;
+                for(size_t j = 0; j <= get_internal_page(i)->count(); j++){
+                    std::cerr<<"   ptr #"<<j<<": ("<<get_internal_page(i)->ptr(j)<<")"<<std::endl;
+                    if(j == get_internal_page(i)->count()) continue;
+                    std::cerr<<"   key #"<<j<<": "<<*(get_internal_page(i)->key(j))<<std::endl;
+                }
+            }
+            else{
+                std::cerr<<"Page "<<i<<": FREE"<<std::endl;
+            }
+        std::cerr<<"----END-----"<<std::endl;
+    }
 
     // operators
     std::shared_ptr<Page> &IndexFile::operator[](size_t idx) {
@@ -271,11 +300,16 @@ namespace Neru {
                 get_index_page(p->ptr(i))->set_parent(q->id());
             }
             q->set_ptr(q->count(), p->ptr(p->count()));
+            get_index_page(p->ptr(p->count()))->set_parent(q->id());
             p->set_count(p->count() / 2);
-            if(*key < *(q->key(0)))
+            if(*key < *(q->key(0))){
                 p->insert(key, v);
-            else
+                get_index_page(v)->set_parent(p->id());
+            }
+            else{
                 q->insert(key, v);
+                get_index_page(v)->set_parent(q->id());
+            }
             p->set_count(p->count() - 1);
             if(p->id() == root()){
                 set_root(_next(IndexPageType::INTERNAL));

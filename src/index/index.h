@@ -14,9 +14,11 @@ namespace Neru {
     class IndexData{
     public:
         IndexData(std::string name_, bool create_);
+        void initialize(FieldType type);
+        std::unique_ptr<IndexFile> file;
+    private:
         std::string name;
         bool create;
-        std::unique_ptr<IndexFile> file;
     };
     class Index {
     public:
@@ -31,9 +33,7 @@ namespace Neru {
         bool insert(std::shared_ptr<Field> key, Entry value);
         bool erase(std::shared_ptr<Field> key);
 
-    private:
         std::unique_ptr<IndexData> _index;
-        void initialize(FieldType type) const ;
     };
 
 }// namespace Neru

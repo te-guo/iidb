@@ -3,12 +3,13 @@
 namespace Neru {
 
     // constructors
-    IndexPage::IndexPage(FieldType field, size_t id_) : _field(field), _id(id_) {
+    IndexPage::IndexPage(FieldType field, size_t id_) : _field(field), _id(id_), _parent(0) {
         _key_size = Field::size(field);
     }
     void IndexPage::reset(FieldType field, size_t id_){
         _field = field;
         _id = id_;
+        _parent = 0;
         _key_size = Field::size(field);
         memset(_data.get(), 0, sizeof(_data));
     }
@@ -38,6 +39,7 @@ namespace Neru {
     void InternalPage::reset(FieldType field, size_t id_){
         _field = field;
         _id = id_;
+        _parent = 0;
         _key_size = Field::size(field);
         memset(_data.get(), 0, sizeof(_data));
         _capacity = (PAGE_SIZE - INTERNAL_PAGE_METADATA_SIZE - sizeof(size_t)) / (key_size() + sizeof(size_t));
@@ -133,6 +135,7 @@ namespace Neru {
     void LeafPage::reset(FieldType field, size_t id_){
         _field = field;
         _id = id_;
+        _parent = 0;
         _key_size = Field::size(field);
         memset(_data.get(), 0, sizeof(_data));
         _capacity = (PAGE_SIZE - LEAF_PAGE_METADATA_SIZE) / (key_size() + sizeof(Entry));

@@ -20,6 +20,7 @@ namespace Neru {
         // info
         static FileType type();
         std::string info() const;
+        void debug();
 
         // operators
         std::shared_ptr<Page> &operator[](size_t idx);
