@@ -2,45 +2,42 @@
 
 namespace Neru {
 
+    
+    IndexData::IndexData(std::string name_, bool create_): name(name_), create(create_) {}
+
+    // constructors
+    Index::Index(): _index(std::unique_ptr<IndexData>(new IndexData(std::string(".trash"), true))) {}
+    Index::Index(std::string name, bool create): _index(std::unique_ptr<IndexData>(new IndexData(name, create))) {}
+
+    void Index::initialize(FieldType type) const {
+        _index->file = std::unique_ptr<IndexFile>(new IndexFile(_index->name, type, _index->create));
+    }
+
     // apis
     bool Index::has(std::shared_ptr<Field> key) const {
-        for (auto _key : _keys)
-            if (*_key == *key)
-                return true;
-        return false;
+        if(!_index->file)
+            initialize(key->type());
+        return _index->file->has(key);
     }
     Entry Index::at(std::shared_ptr<Field> key) const {
-        for (size_t i = 0; i < _keys.size(); ++i)
-            if (*_keys[i] == *key)
-                return _values[i];
-        throw std::runtime_error("Index: Key not found!");
+        if(!_index->file)
+            initialize(key->type());
+        return _index->file->at(key);
     }
     std::vector<Entry> Index::range(std::shared_ptr<Field> lower, std::shared_ptr<Field> upper) const {
-        std::vector<Entry> values;
-        for (size_t i = 0; i < _keys.size(); ++i)
-            if (*_keys[i] >= *lower && *_keys[i] < *upper)
-                values.push_back(_values[i]);
-        return values;
+        if(!_index->file)
+            initialize(lower->type());
+        return _index->file->range(lower, upper);
     }
     bool Index::insert(std::shared_ptr<Field> key, Entry value) {
-        for (size_t i = 0; i < _keys.size(); ++i)
-            if (*_keys[i] == *key) {
-                _values[i] = value;
-                return true;
-            }
-        // may encounter bug (shallow copy)
-        _keys.push_back(key);
-        _values.push_back(value);
-        return true;
+        if(!_index->file)
+            initialize(key->type());
+        return _index->file->insert(key, value);
     }
     bool Index::erase(std::shared_ptr<Field> key) {
-        for (size_t i = 0; i < _keys.size(); ++i)
-            if (*_keys[i] == *key) {
-                _keys.erase(_keys.begin() + i);
-                _values.erase(_values.begin() + i);
-                return true;
-            }
-        return false;
+        if(!_index->file)
+            initialize(key->type());
+        return _index->file->erase(key);
     }
 
 

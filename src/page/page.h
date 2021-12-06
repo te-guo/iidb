@@ -18,6 +18,8 @@ namespace Neru {
         Page &read(uint8_t *dst, size_t size, size_t offset);
         Page &write(const uint8_t *src, size_t size, size_t offset);
         char *raw() const;
+        size_t read_int(size_t offset);
+        void write_int(size_t src, size_t offset);
 
     protected:
         std::shared_ptr<uint8_t[]> _data;

@@ -1,10 +1,13 @@
 #ifndef NERU_TABLE_H
 #define NERU_TABLE_H
 
+#include <map>
+#include <queue>
 #include "field/fields.h"
 #include "file/files.h"
 #include "page/pages.h"
 #include "record/record.h"
+#include "index/index.h"
 
 namespace Neru {
 
@@ -29,11 +32,14 @@ namespace Neru {
         Entry update(Entry entry, std::shared_ptr<Record> record);
         bool remove(Entry entry);
         std::vector<std::shared_ptr<Record>> select() const;
+        bool build_index(size_t idx);
 
     private:
         std::string _name;
         Header _head;
-        DataFile _file;
+        MetadataFile _metadata;
+        std::map<size_t, IndexFile> _index;
+        DataFile _data;
     };
 
 }// namespace Neru
