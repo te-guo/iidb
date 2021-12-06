@@ -73,7 +73,7 @@ namespace Neru {
         return _info;
     }
     void IndexFile::debug(){
-        std::cerr<<"IndexFile:"<<std::endl;
+        std::cerr<<"-----Begin: IndexFile-----"<<std::endl;
         std::cerr<<"  root: "<<root()<<std::endl;
         for(size_t i = 1; i < _pages.size(); i++)
             if(page_type(i) == IndexPageType::LEAF){
@@ -269,7 +269,7 @@ namespace Neru {
                 return true;
             auto q = get_leaf_page(_next(IndexPageType::LEAF));
             for(size_t i = p->count() / 2; i < p->count(); i++)
-                q->insert(q->count(), p->key(i), p->entry(i));
+                q->insert_at(q->count(), p->key(i), p->entry(i));
             p->set_count(p->count() / 2);
             if(*key < *(q->key(0)))
                 p->insert(key, value);
@@ -290,24 +290,22 @@ namespace Neru {
         }
         while(true){
             auto p = get_internal_page(pid);
-            if(p->insert(key, v))
+            if(p->insert(key, v, false))
                 return true;
             auto q = get_internal_page(_next(IndexPageType::INTERNAL));
             for(size_t i = p->count() / 2; i < p->count(); i++){
-                q->set_key(q->count(), p->key(i));
-                q->set_ptr(q->count(), p->ptr(i));
-                q->set_count(q->count() + 1);
+                q->insert_at(q->count(), p->key(i), p->ptr(i), true);
                 get_index_page(p->ptr(i))->set_parent(q->id());
             }
             q->set_ptr(q->count(), p->ptr(p->count()));
             get_index_page(p->ptr(p->count()))->set_parent(q->id());
             p->set_count(p->count() / 2);
             if(*key < *(q->key(0))){
-                p->insert(key, v);
+                p->insert(key, v, false);
                 get_index_page(v)->set_parent(p->id());
             }
             else{
-                q->insert(key, v);
+                q->insert(key, v, false);
                 get_index_page(v)->set_parent(q->id());
             }
             p->set_count(p->count() - 1);
@@ -326,7 +324,7 @@ namespace Neru {
     bool IndexFile::erase(std::shared_ptr<Field> key){
         if(root() == 0)
             return false;
-        size_t pid = find_leaf(key);
+        size_t pid = find_leaf(key), v;
         {
             auto p = get_leaf_page(pid);
             if(!p->erase(key))
@@ -344,12 +342,12 @@ namespace Neru {
                 auto q = get_leaf_page(qid);
                 if(qleft){
                     p->insert(q->key(q->count() - 1), q->entry(q->count() - 1));
-                    q->erase(q->count() - 1);
+                    q->erase_at(q->count() - 1);
                     parent->set_key(p_idx - 1, p->key(0));
                 }
                 else{
                     p->insert(q->key(0), q->entry(0));
-                    q->erase(0);
+                    q->erase_at(0);
                     parent->set_key(p_idx, q->key(0));
                 }
                 return true;
@@ -360,15 +358,14 @@ namespace Neru {
                 qid = pid, pid = get_leaf_page(qid)->prev_page(), p = get_leaf_page(pid);
             auto q = get_leaf_page(qid);
             for(size_t i = 0; i < q->count(); i++)
-                p->insert(p->count(), q->key(i), q->entry(i));
+                p->insert_at(p->count(), q->key(i), q->entry(i));
             pid = q->parent();
-            key = q->key(0);
+            v = q->id();
             garbage_collect(q->id());
         }
         while(true){
             auto p = get_internal_page(pid);
-            if(!p->erase(key))
-                throw std::runtime_error("IndexFile: unexpected event");
+            p->erase_at(p->find(v), false);
             if(p->id() == root() || p->count() >= p->capacity() / 2)
                 return true;
             auto parent = get_internal_page(p->parent());
@@ -383,13 +380,13 @@ namespace Neru {
                 if(qleft){
                     p->insert(parent->key(p_idx - 1), q->ptr(q->count()), true);
                     parent->set_key(p_idx - 1, q->key(q->count() - 1));
-                    q->erase(q->count() - 1, false);
+                    q->erase_at(q->count() - 1, false);
                     get_index_page(p->ptr(0))->set_parent(p->id());
                 }
                 else{
                     p->insert(parent->key(p_idx), q->ptr(0), false);
                     parent->set_key(p_idx, q->key(0));
-                    q->erase(0, true);
+                    q->erase_at(0, true);
                     get_index_page(p->ptr(p->count()))->set_parent(p->id());
                 }
                 return true;
@@ -399,14 +396,14 @@ namespace Neru {
             else
                 qid = pid, pid = parent->ptr(--p_idx), p = get_internal_page(pid);
             auto q = get_internal_page(qid);
-            p->insert(p->count(), parent->key(p_idx), q->ptr(0), false);
+            p->insert_at(p->count(), parent->key(p_idx), q->ptr(0), false);
             get_index_page(q->ptr(0))->set_parent(p->id());
             for(size_t i = 0; i < q->count(); i++){
-                p->insert(p->count(), q->key(i), q->ptr(i + 1), false);
+                p->insert_at(p->count(), q->key(i), q->ptr(i + 1), false);
                 get_index_page(q->ptr(i + 1))->set_parent(p->id());
             }
             pid = q->parent();
-            key = parent->key(p_idx);
+            v = q->id();
             garbage_collect(q->id());
         }
         return false;

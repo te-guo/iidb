@@ -57,10 +57,10 @@ namespace Neru {
         void set_ptr(size_t idx, size_t val);
         size_t find(std::shared_ptr<Field> k);
         size_t find(size_t p);
-        void insert(size_t idx, std::shared_ptr<Field> k, size_t p, bool ptr_on_left = false);
-        bool insert(std::shared_ptr<Field> k, size_t p, bool ptr_on_left = false);
-        void erase(size_t idx, bool ptr_on_left = false);
-        bool erase(std::shared_ptr<Field> k, bool ptr_on_left = false);
+        void insert_at(size_t idx, std::shared_ptr<Field> k, size_t p, bool ptr_on_left);
+        bool insert(std::shared_ptr<Field> k, size_t p, bool ptr_on_left);
+        void erase_at(size_t idx, bool ptr_on_left);
+        bool erase(std::shared_ptr<Field> k, bool ptr_on_left);
     };
 
 #define LEAF_PAGE_METADATA_SIZE 24
@@ -80,9 +80,9 @@ namespace Neru {
         void set_key(size_t idx, std::shared_ptr<Field> val);
         Entry entry(size_t idx);
         void set_entry(size_t idx, Entry val);
-        void insert(size_t idx, std::shared_ptr<Field> k, Entry e);
+        void insert_at(size_t idx, std::shared_ptr<Field> k, Entry e);
         bool insert(std::shared_ptr<Field> k, Entry e);
-        void erase(size_t idx);
+        void erase_at(size_t idx);
         bool erase(std::shared_ptr<Field> k);
     };
 
