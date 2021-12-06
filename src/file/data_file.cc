@@ -48,10 +48,12 @@ namespace Neru {
         //        std::cerr << "Front: " << _front << std::endl;
         for (size_t i = 0; i <= last_page; ++i) {
             auto free = this->get(i)->free();
-            if (i == last_page)
-                free.pop_back();
-            for (auto slot : free)
+            for (auto slot : free) {
+                if (i == last_page)
+                    if (slot >= last_slot)
+                        continue;
                 _free.push({i, slot});
+            }
         }
         //        std::cerr << "Free: " << std::endl;
         //        while (!_free.empty()) {
