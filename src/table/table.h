@@ -38,7 +38,7 @@ namespace Neru {
         std::string _name;
         Header _head;
         MetadataFile _metadata;
-        std::map<size_t, IndexFile> _index;
+        std::map<size_t, std::shared_ptr<IndexFile>> _index;
         DataFile _data;
     };
 

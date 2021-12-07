@@ -77,24 +77,12 @@ namespace Neru {
         std::cerr<<"  root: "<<root()<<std::endl;
         for(size_t i = 1; i < _pages.size(); i++)
             if(page_type(i) == IndexPageType::LEAF){
-                std::cerr<<"Page "<<i<<": leaf"<<std::endl;
-                std::cerr<<"  id: "<<get_leaf_page(i)->id()<<", parent: "<<get_leaf_page(i)->parent()<<std::endl;
-                std::cerr<<"  count: "<<get_leaf_page(i)->count()<<std::endl;
-                std::cerr<<"  prev_page: "<<get_leaf_page(i)->prev_page()<<", next_page: "<<get_leaf_page(i)->next_page()<<std::endl;
-                for(size_t j = 0; j < get_leaf_page(i)->count(); j++){
-                    std::cerr<<"   key #"<<j<<": "<<*(get_leaf_page(i)->key(j))<<std::endl;
-                    std::cerr<<"   entry #"<<j<<": ("<<get_leaf_page(i)->entry(j).page()<<", "<<get_leaf_page(i)->entry(j).slot()<<")"<<std::endl;
-                }
+                std::cerr<<"Page "<<i<<": ";
+                get_leaf_page(i)->debug();
             }
             else if(page_type(i) == IndexPageType::INTERNAL){
-                std::cerr<<"Page "<<i<<": internal"<<std::endl;
-                std::cerr<<"  id: "<<get_internal_page(i)->id()<<", parent: "<<get_internal_page(i)->parent()<<std::endl;
-                std::cerr<<"  count: "<<get_internal_page(i)->count()<<std::endl;
-                for(size_t j = 0; j <= get_internal_page(i)->count(); j++){
-                    std::cerr<<"   ptr #"<<j<<": ("<<get_internal_page(i)->ptr(j)<<")"<<std::endl;
-                    if(j == get_internal_page(i)->count()) continue;
-                    std::cerr<<"   key #"<<j<<": "<<*(get_internal_page(i)->key(j))<<std::endl;
-                }
+                std::cerr<<"Page "<<i<<": ";
+                get_internal_page(i)->debug();
             }
             else{
                 std::cerr<<"Page "<<i<<": FREE"<<std::endl;
@@ -256,6 +244,15 @@ namespace Neru {
         this->range(root(), entries, lower, upper);
         return entries;
     }
+    void IndexFile::update_internal_pages(size_t pid, std::shared_ptr<Field> prev_key, std::shared_ptr<Field> key){
+        while(pid != root()){
+            pid = get_index_page(pid)->parent();
+            auto p = get_internal_page(pid);
+            auto idx = p->find(prev_key);
+            if(idx < p->count())
+                p->set_key(idx, key);
+        }
+    }
     bool IndexFile::insert(std::shared_ptr<Field> key, Entry value){
         if(root() == 0){
             set_root(_next(IndexPageType::LEAF));
@@ -265,8 +262,11 @@ namespace Neru {
         size_t pid = find_leaf(key), v;
         {
             auto p = get_leaf_page(pid);
-            if(p->insert(key, value))
+            if(p->insert(key, value)){
+                if(*(p->key(0)) == *key && p->count() > 1)
+                    update_internal_pages(pid, p->key(1), key);
                 return true;
+            }
             auto q = get_leaf_page(_next(IndexPageType::LEAF));
             for(size_t i = p->count() / 2; i < p->count(); i++)
                 q->insert_at(q->count(), p->key(i), p->entry(i));
@@ -327,6 +327,8 @@ namespace Neru {
         size_t pid = find_leaf(key), v;
         {
             auto p = get_leaf_page(pid);
+            if(*(p->key(0)) == *key && p->count() > 1)
+                update_internal_pages(pid, key, p->key(1));
             if(!p->erase(key))
                 return false;
             if(p->id() == root() || p->count() >= p->capacity() / 2)
@@ -359,14 +361,25 @@ namespace Neru {
             auto q = get_leaf_page(qid);
             for(size_t i = 0; i < q->count(); i++)
                 p->insert_at(p->count(), q->key(i), q->entry(i));
+            p->set_next_page(q->next_page());
+            if(p->next_page() != 0)
+                get_leaf_page(p->next_page())->set_prev_page(p->id());
             pid = q->parent();
             v = q->id();
             garbage_collect(q->id());
         }
         while(true){
             auto p = get_internal_page(pid);
-            p->erase_at(p->find(v), false);
-            if(p->id() == root() || p->count() >= p->capacity() / 2)
+            p->erase_at(p->find(v) - 1, false);
+            if(p->id() == root()){
+                if(p->count() == 0){
+                    set_root(p->ptr(0));
+                    get_index_page(root())->set_parent(0);
+                    garbage_collect(p->id());
+                }
+                return true;
+            }
+            if(p->count() >= p->capacity() / 2)
                 return true;
             auto parent = get_internal_page(p->parent());
             bool qleft;

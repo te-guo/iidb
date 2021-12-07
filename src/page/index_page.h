@@ -48,9 +48,12 @@ namespace Neru {
     public:
         explicit InternalPage(FieldType field, size_t id_);
 
+        //info
+        IndexPageType type();
+        void debug();
+
         //tool
         void reset(FieldType field, size_t id_);
-        IndexPageType type();
         std::shared_ptr<Field> key(size_t idx);
         void set_key(size_t idx, std::shared_ptr<Field> val);
         size_t ptr(size_t idx);
@@ -69,9 +72,12 @@ namespace Neru {
     public:
         explicit LeafPage(FieldType field, size_t id_);
 
+        //info
+        IndexPageType type();
+        void debug();
+
         //tool
         void reset(FieldType field, size_t id_);
-        IndexPageType type();
         size_t prev_page();
         void set_prev_page(size_t val);
         size_t next_page();

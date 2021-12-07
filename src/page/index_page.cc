@@ -45,6 +45,16 @@ namespace Neru {
         _capacity = (PAGE_SIZE - INTERNAL_PAGE_METADATA_SIZE - sizeof(size_t)) / (key_size() + sizeof(size_t));
     }
     IndexPageType InternalPage::type() { return IndexPageType::INTERNAL; }
+    void InternalPage::debug(){
+        std::cerr<<"Internal Page"<<std::endl;
+        std::cerr<<"  id: "<<id()<<", parent: "<<parent()<<std::endl;
+        std::cerr<<"  count: "<<count()<<" / "<<capacity()<<std::endl;
+        for(size_t j = 0; j <= count(); j++){
+            std::cerr<<"   ptr #"<<j<<": ("<<ptr(j)<<")"<<std::endl;
+            if(j == count()) continue;
+            std::cerr<<"   key #"<<j<<": "<<*key(j)<<std::endl;
+        }
+    }
     std::shared_ptr<Field> InternalPage::key(size_t idx){
         size_t offset = INTERNAL_PAGE_METADATA_SIZE + sizeof(size_t) + idx * (sizeof(size_t) + _key_size);
         switch(_field){
@@ -141,6 +151,16 @@ namespace Neru {
         _capacity = (PAGE_SIZE - LEAF_PAGE_METADATA_SIZE) / (key_size() + sizeof(Entry));
     }
     IndexPageType LeafPage::type() { return IndexPageType::LEAF; }
+    void LeafPage::debug(){
+        std::cerr<<"Leaf Page"<<std::endl;
+        std::cerr<<"  id: "<<id()<<", parent: "<<parent()<<std::endl;
+        std::cerr<<"  count: "<<count()<<" / "<<capacity()<<std::endl;
+        std::cerr<<"  prev_page: "<<prev_page()<<", next_page: "<<next_page()<<std::endl;
+        for(size_t j = 0; j < count(); j++){
+            std::cerr<<"   key #"<<j<<": "<<*key(j)<<std::endl;
+            std::cerr<<"   entry #"<<j<<": ("<<entry(j).page()<<", "<<entry(j).slot()<<")"<<std::endl;
+        }
+    }
     size_t LeafPage::prev_page(){
         return read_int(8);
     }

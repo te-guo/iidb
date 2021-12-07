@@ -52,6 +52,7 @@ namespace Neru {
         size_t _next(IndexPageType type);
         size_t find_leaf(std::shared_ptr<Field> key) const;
         void range(size_t pid, std::vector<Entry>& entries, std::shared_ptr<Field> lower, std::shared_ptr<Field> upper) const;
+        void update_internal_pages(size_t pid, std::shared_ptr<Field> prev_key, std::shared_ptr<Field> key);
     };
 
 }// namespace Neru

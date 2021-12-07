@@ -34,7 +34,7 @@ namespace Neru {
         Entry update(Entry entry, std::shared_ptr<Record> record, bool overwrite = true);
         bool remove(Entry entry);
         std::vector<std::shared_ptr<Record>> select() const;
-        std::vector<std::pair<std::shared_ptr<Record>, Entry>> select_with_entry() const;
+        void select_with_entry(std::vector<std::pair<std::shared_ptr<Record>, Entry>> &records) const;
 
     private:
         Header _head;

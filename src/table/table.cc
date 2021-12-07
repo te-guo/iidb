@@ -14,15 +14,16 @@ namespace Neru {
         page->read(tmp, head.size(), 0);
         for(int i = 0; i < head.size(); i++)
             if(tmp[i])
-                _index.insert(std::make_pair(i, IndexFile(name + ".index." + std::to_string(i), head[i])));
+                _index.insert(std::make_pair(i, std::make_shared<IndexFile>(name + ".index." + std::to_string(i), head[i])));
     }
 
     bool Table::build_index(size_t idx){
         if(_metadata.set(idx)){
-            auto index = _index.insert(std::make_pair(idx, IndexFile(_name + ".index." + std::to_string(idx), _head[idx], true))).first->second;
-            std::vector<std::pair<std::shared_ptr<Record>, Entry>> records = _data.select_with_entry();
+            auto& index = _index.insert(std::make_pair(idx, std::make_shared<IndexFile>(_name + ".index." + std::to_string(idx), _head[idx], true))).first->second;
+            std::vector<std::pair<std::shared_ptr<Record>, Entry>> records;
+            _data.select_with_entry(records);
             for(auto& record: records)
-                index.insert((*record.first)[idx], record.second);
+                index->insert((*record.first)[idx], record.second);
             return true;
         }
         else
@@ -38,21 +39,21 @@ namespace Neru {
     Entry Table::insert(std::shared_ptr<Record> record) {
         Entry entry = _data.insert(record);
         for(auto& idx: _index)
-            idx.second.insert((*record)[idx.first], entry);
+            idx.second->insert((*record)[idx.first], entry);
         return entry;
     }
     Entry Table::update(Entry entry, std::shared_ptr<Record> record) {
         std::queue<size_t> modified;
         for(auto& idx: _index)
-            if((*_data.get(entry.page())->get(entry.slot()))[idx.first] != (*record)[idx.first]){
-                idx.second.erase((*_data.get(entry.page())->get(entry.slot()))[idx.first]);
+            if(*(*_data.get(entry.page())->get(entry.slot()))[idx.first] != *(*record)[idx.first]){
+                idx.second->erase((*_data.get(entry.page())->get(entry.slot()))[idx.first]);
                 modified.push(idx.first);
             }
         entry = _data.update(entry, record);
         for(auto& idx: _index)
             if(!modified.empty() && modified.front() == idx.first){
                 modified.pop();
-                idx.second.insert((*record)[idx.first], entry);
+                idx.second->insert((*record)[idx.first], entry);
             }
         return entry;
     }
@@ -60,7 +61,7 @@ namespace Neru {
         auto record = _data.get(entry.page())->get(entry.slot());
         if(_data.remove(entry)){
             for(auto& idx: _index)
-                idx.second.erase((*record)[idx.first]);
+                idx.second->erase((*record)[idx.first]);
             return true;
         }
         else

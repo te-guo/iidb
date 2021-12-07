@@ -31,7 +31,7 @@ namespace Neru {
         bool has(size_t idx) const;
         std::shared_ptr<Record> get(size_t idx) const;
         std::vector<std::shared_ptr<Record>> select() const;
-        std::vector<std::pair<std::shared_ptr<Record>, size_t>> select_with_slot() const;
+        void select_with_slot(std::vector<std::pair<std::shared_ptr<Record>, size_t>> &records) const;
 
     private:
         size_t _size;
