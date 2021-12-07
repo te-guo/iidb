@@ -308,7 +308,7 @@ namespace Neru {
                 q->insert(key, v, false);
                 get_index_page(v)->set_parent(q->id());
             }
-            p->set_count(p->count() - 1);
+            p->erase_at(p->count() - 1, false);
             if(p->id() == root()){
                 set_root(_next(IndexPageType::INTERNAL));
                 p->set_parent(root());
@@ -343,12 +343,12 @@ namespace Neru {
             if(qid != 0){
                 auto q = get_leaf_page(qid);
                 if(qleft){
-                    p->insert(q->key(q->count() - 1), q->entry(q->count() - 1));
+                    p->insert_at(0, q->key(q->count() - 1), q->entry(q->count() - 1));
                     q->erase_at(q->count() - 1);
                     parent->set_key(p_idx - 1, p->key(0));
                 }
                 else{
-                    p->insert(q->key(0), q->entry(0));
+                    p->insert_at(p->count(), q->key(0), q->entry(0));
                     q->erase_at(0);
                     parent->set_key(p_idx, q->key(0));
                 }
@@ -391,13 +391,13 @@ namespace Neru {
             if(qid != 0){
                 auto q = get_internal_page(qid);
                 if(qleft){
-                    p->insert(parent->key(p_idx - 1), q->ptr(q->count()), true);
+                    p->insert_at(0, parent->key(p_idx - 1), q->ptr(q->count()), true);
                     parent->set_key(p_idx - 1, q->key(q->count() - 1));
                     q->erase_at(q->count() - 1, false);
                     get_index_page(p->ptr(0))->set_parent(p->id());
                 }
                 else{
-                    p->insert(parent->key(p_idx), q->ptr(0), false);
+                    p->insert_at(p->count(), parent->key(p_idx), q->ptr(0), false);
                     parent->set_key(p_idx, q->key(0));
                     q->erase_at(0, true);
                     get_index_page(p->ptr(p->count()))->set_parent(p->id());
