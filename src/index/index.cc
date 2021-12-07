@@ -2,7 +2,6 @@
 
 namespace Neru {
 
-    
     IndexData::IndexData(std::string name_, bool create_): name(name_), create(create_) {}
     void IndexData::initialize(FieldType type){
         file = std::make_unique<IndexFile>(name, type, create);

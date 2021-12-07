@@ -24,7 +24,7 @@ namespace Neru {
 
         // operators
         std::shared_ptr<Page> &operator[](size_t idx);
-        
+
         // tools
         IndexPageType page_type(size_t idx) const;
         void set_page_type(size_t idx, IndexPageType type);

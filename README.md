@@ -6,8 +6,7 @@ In $\texttt{table.h}$​​, new index-related APIs are provided (indexes do not
 
 (The following functions assume that there is an index already built on the table's $\texttt{idx}$​-th field.)
 
-- $\texttt{key\_has(idx, key)}$ is used to check whether there is a record whose $\texttt{idx}$-th field is $\texttt{key}$​.
-
+- $\texttt{key\_has(idx, key)}$ is used to check whether there is a record whose $\texttt{idx}$-th field is $\texttt{key}$.
 - $\texttt{key\_at(idx, key)}$ is used to find the entry whose record's $\texttt{idx}$-th field is $\texttt{key}$.
 - $\texttt{key\_range(idx, lower, upper)}$ is used to find all the entries whose record's $\texttt{idx}$-th field is $\ge\texttt{lower}$ and $<\texttt{upper}$.
 - $\texttt{insert\_with\_index(idx, record)}$ is used to insert $\texttt{record}$ into the table.
