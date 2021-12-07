@@ -337,6 +337,118 @@ bool index_test() {
     return true;
 }
 
+bool table_with_index_test() {
+    std::cerr << "---Table with Index---" << std::endl;
+    // true
+    std::cerr << File::init() << std::endl;
+    Header head = {FieldType::INT, FieldType::DOUBLE};
+    Entry::set(DATA_CAPACITY / utils::size(head));
+    {
+        Table table("table_with_index", head, true);
+        if(table.has_index(0) || table.has_index(1)) return false;
+        if(!table.build_index(1)) return false;
+        std::vector<Entry> entries;
+        for (size_t i = 0; i < 114514; ++i) {
+            std::shared_ptr<Field> int_field = std::make_shared<IntField>(i);
+            std::shared_ptr<Field> double_field = std::make_shared<DoubleField>(i * 2 + 114);
+            auto record = std::make_shared<Record>(std::vector{int_field, double_field});
+            entries.push_back(table.insert_with_index(1, record));
+        }
+        if(!table.build_index(0)) return false;
+        auto records = table.select();
+        for (auto record : records) {
+            auto int_field = std::static_pointer_cast<IntField>(record->get(0));
+            auto double_field = std::static_pointer_cast<DoubleField>(record->get(1));
+            if (int32_t(*int_field) * 2 + 114 != double(*double_field))
+                return false;
+        }
+        std::cerr << "Insert passed." << std::endl;
+        if(!table.has_index(0) || !table.has_index(1)) return false;
+        if(!table.delete_index(1)) return false;
+        if(table.has_index(1)) return false;
+        for (size_t i = 0; i < entries.size(); ++i) {
+            auto entry = entries[i];
+            std::shared_ptr<Field> int_field = std::make_shared<IntField>(i);
+            std::shared_ptr<Field> double_field = std::make_shared<DoubleField>(i * 2 + 514);
+            auto record = std::make_shared<Record>(std::vector{int_field, double_field});
+            table.update_with_index(0, int_field, record);
+        }
+        if(!table.build_index(1)) return false;
+        records = table.select();
+        for (auto record : records) {
+            auto int_field = std::static_pointer_cast<IntField>(record->get(0));
+            auto double_field = std::static_pointer_cast<DoubleField>(record->get(1));
+            if (int32_t(*int_field) * 2 + 514 != double(*double_field))
+                return false;
+        }
+        std::cerr << "Update passed." << std::endl;
+        for (size_t i = 0; i + i < entries.size(); ++i)
+            if(i & 1u)
+                table.remove_with_index(0, std::make_shared<IntField>(i));
+            else
+                table.remove_with_index(1, std::make_shared<DoubleField>(i * 2 + 514));
+        for (size_t i = 0; i + i < entries.size(); ++i)
+            if(i + i < entries.size())
+                if(i & 1u){
+                    if(table.key_has(0, std::make_shared<IntField>(i)))
+                        return false;
+                }
+                else{
+                    if(table.key_has(1, std::make_shared<DoubleField>(i * 2 + 514)))
+                        return false;
+                }
+            else
+                if(i & 1u){
+                    if(!table.key_has(0, std::make_shared<IntField>(i)))
+                        return false;
+                    if(table.key_at(0, std::make_shared<IntField>(i)) != entries[i])
+                        return false;
+                }
+                else{
+                    if(!table.key_has(1, std::make_shared<DoubleField>(i * 2 + 514)))
+                        return false;
+                    if(table.key_at(1, std::make_shared<DoubleField>(i * 2 + 514)) != entries[i])
+                        return false;
+                }
+        records = table.select();
+        std::cerr << entries.size() << ' ' << records.size() << std::endl;
+        for (auto record : records) {
+            auto int_field = std::static_pointer_cast<IntField>(record->get(0));
+            auto double_field = std::static_pointer_cast<DoubleField>(record->get(1));
+            if (int32_t(*int_field) * 2 + 514 != double(*double_field))
+                return false;
+        }
+        std::cerr << "Remove passed." << std::endl;
+    }
+    Table after("table_with_index", head);
+    if(!after.has_index(0) || !after.has_index(1)) return false;
+    auto records = after.select();
+    std::cerr << records.size() << std::endl;
+    for (auto record : records) {
+        auto int_field = std::static_pointer_cast<IntField>(record->get(0));
+        auto double_field = std::static_pointer_cast<DoubleField>(record->get(1));
+        if (int32_t(*int_field) * 2 + 514 != double(*double_field))
+            return false;
+    }
+    std::cerr << "Load passed." << std::endl;
+    for (size_t i = 0; i + i < 114514; ++i) {
+        std::shared_ptr<Field> int_field = std::make_shared<IntField>(i);
+        std::shared_ptr<Field> double_field = std::make_shared<DoubleField>(i * 2 + 514);
+        auto record = std::make_shared<Record>(std::vector{int_field, double_field});
+        after.insert_with_index(0, record);
+    }
+    records = after.select();
+    for (auto record : records) {
+        auto int_field = std::static_pointer_cast<IntField const>(record->get(0));
+        auto double_field = std::static_pointer_cast<DoubleField const>(record->get(1));
+        if (int32_t(*int_field) * 2 + 514 != double(*double_field))
+            return false;
+    }
+    if(!after.delete_index(1) || !after.delete_index(0)) return false;
+    std::cerr << "Load Insert passed." << std::endl;
+    return true;
+}
+
 int main() {
     field_test();
     record_test();
@@ -347,6 +459,7 @@ int main() {
     std::cerr << data_file_test() << std::endl;
     std::cerr << table_test() << std::endl;
     std::cerr << index_test() << std::endl;
+    std::cerr << table_with_index_test() << std::endl;
     std::cerr << "---Exiting---" << std::endl;
     return 0;
 }
