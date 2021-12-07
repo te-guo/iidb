@@ -34,9 +34,15 @@ namespace Neru {
         std::vector<std::shared_ptr<Record>> select() const;
 
         // index-related apis
-        bool has_index(size_t idx);
-        bool build_index(size_t idx);
-        bool delete_index(size_t idx);
+        bool has_index(size_t index_idx);
+        bool build_index(size_t index_idx);
+        bool delete_index(size_t index_idx);
+        bool key_has(size_t index_idx, std::shared_ptr<Field> key);
+        Entry key_at(size_t index_idx, std::shared_ptr<Field> key);
+        std::vector<Entry> key_range(size_t index_idx, std::shared_ptr<Field> lower, std::shared_ptr<Field> upper);
+        Entry insert_with_index(size_t index_idx, std::shared_ptr<Record> record);
+        Entry update_with_index(size_t index_idx, std::shared_ptr<Field> key, std::shared_ptr<Record> record);
+        bool remove_with_index(size_t index_idx, std::shared_ptr<Field> key);
 
     private:
         std::string _name;
