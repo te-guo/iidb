@@ -20,7 +20,7 @@ namespace Neru {
         return _info;
     }
     // tools
-    bool MetadataFile::has_index(size_t idx){
+    bool MetadataFile::test(size_t idx){
         if(idx >= _size)
             throw std::runtime_error("Build_index: Out of range!");
         uint8_t tmp;
@@ -37,6 +37,18 @@ namespace Neru {
         if(tmp)
             return false;
         tmp = 1;
+        page->write(&tmp, 1, idx);
+        return true;
+    }
+    bool MetadataFile::reset(size_t idx){
+        if(idx >= _size)
+            throw std::runtime_error("Build_index: Out of range!");
+        uint8_t tmp;
+        std::shared_ptr<Page> page = this->get(0);
+        page->read(&tmp, 1, idx);
+        if(!tmp)
+            return false;
+        tmp = 0;
         page->write(&tmp, 1, idx);
         return true;
     }

@@ -32,7 +32,11 @@ namespace Neru {
         Entry update(Entry entry, std::shared_ptr<Record> record);
         bool remove(Entry entry);
         std::vector<std::shared_ptr<Record>> select() const;
+
+        // index-related apis
+        bool has_index(size_t idx);
         bool build_index(size_t idx);
+        bool delete_index(size_t idx);
 
     private:
         std::string _name;

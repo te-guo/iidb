@@ -18,8 +18,9 @@ namespace Neru {
         static FileType type();
         std::string info() const;
         //tools
-        bool has_index(size_t idx);
+        bool test(size_t idx);
         bool set(size_t idx);
+        bool reset(size_t idx);
     private:
         size_t _size;
     };

@@ -7,16 +7,16 @@ namespace Neru {
     Table::Table(std::string name, Header head, bool create) : _name(name), _head(head),
     _data(name + ".data", head, create),
     _metadata(name + ".metadata", head, create) {
-        uint8_t tmp[PAGE_SIZE];
         if(create)
             return;
-        std::shared_ptr<Page> page = _metadata.get(0);
-        page->read(tmp, head.size(), 0);
         for(int i = 0; i < head.size(); i++)
-            if(tmp[i])
+            if(has_index(i))
                 _index.insert(std::make_pair(i, std::make_shared<IndexFile>(name + ".index." + std::to_string(i), head[i])));
     }
 
+    bool Table::has_index(size_t idx){
+        return _metadata.test(idx);
+    }
     bool Table::build_index(size_t idx){
         if(_metadata.set(idx)){
             auto& index = _index.insert(std::make_pair(idx, std::make_shared<IndexFile>(_name + ".index." + std::to_string(idx), _head[idx], true))).first->second;
@@ -24,6 +24,14 @@ namespace Neru {
             _data.select_with_entry(records);
             for(auto& record: records)
                 index->insert((*record.first)[idx], record.second);
+            return true;
+        }
+        else
+            return false;
+    }
+    bool Table::delete_index(size_t idx){
+        if(_metadata.reset(idx)){
+            _index.erase(idx);
             return true;
         }
         else
