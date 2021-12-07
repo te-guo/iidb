@@ -49,11 +49,11 @@ namespace Neru {
         std::cerr<<"Internal Page"<<std::endl;
         std::cerr<<"  id: "<<id()<<", parent: "<<parent()<<std::endl;
         std::cerr<<"  count: "<<count()<<" / "<<capacity()<<std::endl;
-        for(size_t j = 0; j <= count(); j++){
+        for(size_t j = 0; j < count(); j++){
             std::cerr<<"   ptr #"<<j<<": ("<<ptr(j)<<")"<<std::endl;
-            if(j == count()) continue;
             std::cerr<<"   key #"<<j<<": "<<*key(j)<<std::endl;
         }
+        std::cerr<<"   ptr #"<<count()<<": ("<<ptr(count())<<")"<<std::endl;
     }
     std::shared_ptr<Field> InternalPage::key(size_t idx){
         size_t offset = INTERNAL_PAGE_METADATA_SIZE + sizeof(size_t) + idx * (sizeof(size_t) + _key_size);
@@ -82,10 +82,28 @@ namespace Neru {
     void InternalPage::set_ptr(size_t idx, size_t val){
         write_int(val, INTERNAL_PAGE_METADATA_SIZE + idx * (sizeof(size_t) + _key_size));
     }
+    size_t InternalPage::lower_bound(std::shared_ptr<Field> k){
+        size_t l = 0, r = count();
+        while(l < r){
+            size_t mid = l + r >> 1;
+            if(*k <= *key(mid))
+                r = mid;
+            else
+                l = mid + 1;
+        }
+        return l;
+    }
     size_t InternalPage::find(std::shared_ptr<Field> k){
-        for(size_t i = 0; i < count(); i++)
-            if(*k == *key(i))
-                return i;
+        size_t l = 0, r = count();
+        while(l < r){
+            size_t mid = l + r >> 1;
+            if(*k < *key(mid))
+                r = mid;
+            else if(*k > *key(mid))
+                l = mid + 1;
+            else
+                return mid;
+        }
         return count();
     }
     size_t InternalPage::find(size_t p){
@@ -111,13 +129,13 @@ namespace Neru {
     bool InternalPage::insert(std::shared_ptr<Field> k, size_t p, bool ptr_on_left){
         if(count() >= capacity())
             return false;
-        for(size_t i = 0; i <= count(); i++)
-            if(i == count() || *k < *key(i)){
-                insert_at(i, k, p, ptr_on_left);
-                return true;
-            }
-            else if(*k == *key(i))
-                throw std::runtime_error("IndexPage: insert duplicated keys");
+        auto i = lower_bound(k);
+        if(i == count() || *k < *key(i)){
+            insert_at(i, k, p, ptr_on_left);
+            return true;
+        }
+        else
+            throw std::runtime_error("IndexPage: insert duplicated keys");
         return false;
     }
     void InternalPage::erase_at(size_t idx, bool ptr_on_left){
@@ -130,11 +148,11 @@ namespace Neru {
         }
     }
     bool InternalPage::erase(std::shared_ptr<Field> k, bool ptr_on_left){
-        for(size_t i = 0; i < count(); i++)
-            if(*k == *key(i)){
-                erase_at(i, ptr_on_left);
-                return true;
-            }
+        auto i = find(k);
+        if(i != count()){
+            erase_at(i, ptr_on_left);
+            return true;
+        }
         return false;
     }
 
@@ -203,6 +221,30 @@ namespace Neru {
         write_int(val.page(), offset);
         write_int(val.slot(), offset + sizeof(size_t));
     }
+    size_t LeafPage::lower_bound(std::shared_ptr<Field> k){
+        size_t l = 0, r = count();
+        while(l < r){
+            size_t mid = l + r >> 1;
+            if(*k <= *key(mid))
+                r = mid;
+            else
+                l = mid + 1;
+        }
+        return l;
+    }
+    size_t LeafPage::find(std::shared_ptr<Field> k){
+        size_t l = 0, r = count();
+        while(l < r){
+            size_t mid = l + r >> 1;
+            if(*k < *key(mid))
+                r = mid;
+            else if(*k > *key(mid))
+                l = mid + 1;
+            else
+                return mid;
+        }
+        return count();
+    }
     void LeafPage::insert_at(size_t idx, std::shared_ptr<Field> k, Entry e){
         for(size_t j = count(); j > idx; j--){
             set_key(j, key(j - 1));
@@ -213,18 +255,15 @@ namespace Neru {
         set_count(count() + 1);
     }
     bool LeafPage::insert(std::shared_ptr<Field> k, Entry e){
-        for(size_t i = 0; i <= count(); i++)
-            if(i == count() || *k < *key(i)){
-                if(count() >= capacity())
-                    return false;
-                insert_at(i, k, e);
-                return true;
-            }
-            else if(*k == *key(i)){
-                set_entry(i, e);
-                return true;
-            }
-        return false;
+        auto i = lower_bound(k);
+        if(i == count() || *k < *key(i)){
+            if(count() >= capacity())
+                return false;
+            insert_at(i, k, e);
+        }
+        else
+            set_entry(i, e);
+        return true;
     }
     void LeafPage::erase_at(size_t idx){
         set_count(count() - 1);
@@ -234,11 +273,11 @@ namespace Neru {
         }
     }
     bool LeafPage::erase(std::shared_ptr<Field> k){
-        for(size_t i = 0; i < count(); i++)
-            if(*k == *key(i)){
-                erase_at(i);
-                return true;
-            }
+        auto i = find(k);
+        if(i != count()){
+            erase_at(i);
+            return true;
+        }
         return false;
     }
 
