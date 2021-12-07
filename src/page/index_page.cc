@@ -135,7 +135,7 @@ namespace Neru {
             return true;
         }
         else
-            throw std::runtime_error("IndexPage: insert duplicated keys");
+            throw std::runtime_error("IndexPage: insert duplicate keys");
         return false;
     }
     void InternalPage::erase_at(size_t idx, bool ptr_on_left){
