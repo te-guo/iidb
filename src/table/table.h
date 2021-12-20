@@ -29,6 +29,7 @@ namespace Neru {
         Entry update(Entry entry, std::shared_ptr<Record> record);
         bool remove(Entry entry);
         std::shared_ptr<Record> get(Entry entry);
+
         std::vector<std::shared_ptr<Record>> select() const;
 
     private:

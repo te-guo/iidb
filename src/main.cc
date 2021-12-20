@@ -1,5 +1,6 @@
 #include "utils/utils.h"
 #include <assert.h>
+
 using namespace Neru;
 
 size_t Entry::_capacity;
@@ -15,6 +16,7 @@ extern bool table_test();
 extern bool index_test();
 extern bool condition_test();
 extern bool txn_test();
+
 
 int main() {
     field_test();
