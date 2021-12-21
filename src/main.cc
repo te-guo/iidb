@@ -1,4 +1,5 @@
 #include "utils/utils.h"
+#include <assert.h>
 
 using namespace Neru;
 
@@ -14,6 +15,8 @@ extern bool data_file_test();
 extern bool table_test();
 extern bool index_test();
 extern bool condition_test();
+extern bool txn_test();
+
 
 int main() {
     field_test();
@@ -26,6 +29,7 @@ int main() {
     std::cerr << table_test() << std::endl;
     std::cerr << index_test() << std::endl;
     condition_test();
+    assert(txn_test() == 1);
     std::cerr << "---Exiting---" << std::endl;
     return 0;
 }

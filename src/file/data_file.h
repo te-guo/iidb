@@ -32,6 +32,8 @@ namespace Neru {
         // apis
         Entry insert(std::shared_ptr<Record const> record);
         Entry update(Entry entry, std::shared_ptr<Record const> record, bool overwrite = true);
+        std::shared_ptr<Record>  get(Entry entry);
+
         bool remove(Entry entry);
         std::vector<std::shared_ptr<Record>> select() const;
 

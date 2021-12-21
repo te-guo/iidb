@@ -55,6 +55,7 @@ namespace Neru {
                 _free.push({i, slot});
             }
         }
+
         //        std::cerr << "Free: " << _free.size() << std::endl;
         //        std::cerr << "Free: " << std::endl;
         //        while (!_free.empty()) {
@@ -132,6 +133,7 @@ namespace Neru {
         return this->update(entry, record, false);
     }
     Entry DataFile::update(Entry entry, std::shared_ptr<Record const> record, bool overwrite) {
+
         auto page = this->get(entry.page());
         size_t slot = entry.slot();
         if (!overwrite && page->has(slot))
@@ -139,6 +141,16 @@ namespace Neru {
         page->set(slot, record);
         return entry;
     }
+
+    std::shared_ptr<Record>  DataFile::get(Entry entry) {
+        auto page = this->get(entry.page());
+        size_t slot = entry.slot();
+        if (!page->has(slot))
+            throw std::runtime_error("DataFile: Record not found!");
+        return page->get(slot);
+        
+    }
+
     bool DataFile::remove(Entry entry) {
         auto page = this->get(entry.page());
         size_t slot = entry.slot();

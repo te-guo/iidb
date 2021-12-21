@@ -14,6 +14,8 @@ namespace Neru {
     Entry Table::insert(std::shared_ptr<Record> record) { return _file.insert(record); }
     Entry Table::update(Entry entry, std::shared_ptr<Record> record) { return _file.update(entry, record); }
     bool Table::remove(Entry entry) { return _file.remove(entry); }
+    std::shared_ptr<Record> Table::get(Entry entry)  { return _file.get(entry); }
+
     std::vector<std::shared_ptr<Record>> Table::select() const { return _file.select(); }
 
 }// namespace Neru
