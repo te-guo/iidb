@@ -36,6 +36,7 @@ namespace Neru {
 
         bool remove(Entry entry);
         std::vector<std::shared_ptr<Record>> select() const;
+        void select_with_entry(std::vector<std::pair<std::shared_ptr<Record>, Entry>> &records) const;
 
     private:
         Header _head;

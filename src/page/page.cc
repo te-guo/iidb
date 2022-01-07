@@ -22,5 +22,13 @@ namespace Neru {
         return *this;
     }
     char *Page::raw() const { return (char *) _data.get(); }
+    size_t Page::read_int(size_t offset){
+        size_t dst;
+        this->read((uint8_t*)(&dst), sizeof(size_t), offset);
+        return dst;
+    }
+    void Page::write_int(size_t src, size_t offset){
+        this->write((uint8_t*)&src, sizeof(size_t), offset);
+    }
 
 }// namespace Neru

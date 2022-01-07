@@ -8,3 +8,6 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 file(GLOB_RECURSE NERU_SRC ${PROJECT_SOURCE_DIR}/src/*.cc)
 add_executable(neru ${NERU_SRC})
+
+find_package(Threads)
+target_link_libraries(neru ${CMAKE_THREAD_LIBS_INIT})

@@ -49,6 +49,11 @@ namespace Neru {
                 records.push_back(std::make_shared<Record>(_data.get() + DATA_OFFSET + i * _size, _head));
         return records;
     }
+    void DataPage::select_with_slot(std::vector<std::pair<std::shared_ptr<Record>, size_t>> &records) const {
+        for (size_t i = 0; i < _capacity; ++i)
+            if (_flag->test(i))
+                records.push_back(std::make_pair(std::make_shared<Record>(_data.get() + DATA_OFFSET + i * _size, _head), i));
+    }
 
     // tools
     uint8_t *DataPage::operator[](size_t idx) const {

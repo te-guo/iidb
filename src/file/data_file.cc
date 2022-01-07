@@ -169,6 +169,15 @@ namespace Neru {
             }
         return records;
     }
+    void DataFile::select_with_entry(std::vector<std::pair<std::shared_ptr<Record>, Entry>> &records) const {
+        for (size_t i = 0; i < this->size(); ++i)
+            if (_flag.test(i)) {
+                std::vector<std::pair<std::shared_ptr<Record>, size_t>> _records;
+                this->get(i)->select_with_slot(_records);
+                for(auto& record: _records)
+                    records.push_back(std::make_pair(record.first, Entry(i, record.second)));
+            }
+    }
 
 
 }// namespace Neru

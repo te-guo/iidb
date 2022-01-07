@@ -17,7 +17,8 @@ namespace Neru {
 
     enum class FileType { ANY,
                           DATA,
-                          INDEX };
+                          INDEX,
+                          METADATA };
 
     class File {
     public:
