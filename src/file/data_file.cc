@@ -3,7 +3,7 @@
 namespace Neru {
 
     // constructors
-    DataFile::DataFile(std::string name, Header head, bool create) : File(name, true), _head(head) {
+    DataFile::DataFile(std::string name, Header head, bool create) : File(name + ".data", true), _head(head) {
         _path = std::filesystem::path(FILE_PREFIX) / _name;
         if (create)
             return;

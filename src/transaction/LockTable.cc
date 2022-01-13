@@ -8,7 +8,21 @@ namespace Neru {
         //                       3. update the lock if this txn has a shared lock and request for exclusive lock
         //                       4. add the txn to the lock table, to check grant/wait
         //                       5. please organize the lock_set in the txn, it represent locks that this txn recently holds
-        
+        if(!lock_table_.count(resource_id))
+            lock_table_[resource_id] = new txn_list();
+        if(lock_type == LockType::SHARED){
+            if(txn->has_exclusive_lock(resource_id) || txn->has_shared_lock(resource_id))
+                return true;
+            lock_table_[resource_id]->add(txn, lock_type, resource_id);
+        }
+        else{
+            if(txn->has_exclusive_lock(resource_id))
+                return true;
+            if(txn->has_shared_lock(resource_id))
+                return lock_table_[resource_id]->upgrade(txn, resource_id);
+            lock_table_[resource_id]->add(txn, lock_type, resource_id);
+        }
+        return true;
     }
 
     bool LockTable::UnLock(std::shared_ptr<Transaction>txn, Entry resource_id) {
@@ -16,8 +30,24 @@ namespace Neru {
         // HINT: you shoud       1. remove the lock from the lock table
         //                       2. remove the lock from the txn
         //                       3. check whether should grant to other txn
-
-
+        if(txn->get_state() != TransactionState::COMMITTED && txn->get_state() != TransactionState::ABORTED)
+            return false;
+        if(!lock_table_.count(resource_id))
+            lock_table_[resource_id] = new txn_list();
+        auto &txn_list = lock_table_[resource_id]->txn_list_;
+        for(auto p = txn_list.begin(); p != txn_list.end(); p++)
+            if(p->txn_id == txn->get_txn_id()){
+                if(p->lock_type == LockType::SHARED)
+                    txn->release_shared_lock(resource_id);
+                else
+                    txn->release_exclusive_lock(resource_id);
+                txn_list.erase(p);
+                break;
+            }
+        for(auto p = txn_list.begin(); p != txn_list.end(); p++)
+            if(lock_table_[resource_id]->check_grant(p->lock_type))
+                p->grant();
+        return true;
     }
 
     bool LockTable::LockShared(std::shared_ptr<Transaction>txn, Entry resource_id) {

@@ -35,6 +35,7 @@ namespace Neru {
 
         // tools
         size_t static size(FieldType type);
+        virtual size_t hash() const = 0;
     };
 
 }// namespace Neru

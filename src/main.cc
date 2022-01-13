@@ -16,6 +16,7 @@ extern bool table_test();
 extern bool index_test();
 extern bool condition_test();
 extern bool txn_test();
+extern bool join_test();
 
 
 int main() {
@@ -30,6 +31,7 @@ int main() {
     std::cerr << index_test() << std::endl;
     condition_test();
     assert(txn_test() == 1);
+    assert(join_test() == 1);
     std::cerr << "---Exiting---" << std::endl;
     return 0;
 }

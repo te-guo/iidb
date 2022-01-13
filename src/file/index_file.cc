@@ -3,7 +3,7 @@
 namespace Neru {
 
     // constructors
-    IndexFile::IndexFile(std::string name, FieldType field, bool create) : File(name, true), _field(field) {
+    IndexFile::IndexFile(std::string name, FieldType field, bool create) : File(name + ".index", true), _field(field) {
         _path = std::filesystem::path(FILE_PREFIX) / _name;
         if (create){
             allocate();

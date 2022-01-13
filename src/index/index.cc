@@ -7,9 +7,19 @@ namespace Neru {
         file = std::make_unique<IndexFile>(name, type, create);
     }
 
+    int indextmp_counter = 0;
+
     // constructors
-    Index::Index(): _index(std::make_unique<IndexData>(std::string(".trash"), true)) {}
-    Index::Index(std::string name, bool create): _index(std::make_unique<IndexData>(name, create)) {}
+    Index::Index(): _index(std::make_unique<IndexData>("indextmp." + std::to_string(indextmp_counter++), true)) {}
+    Index::Index(std::string name, bool create): _index(std::make_unique<IndexData>("index." + name, create)) {}
+
+    Index::~Index(){
+        if(_index->name.substr(0, _index->name.find('.')) == "indextmp"){
+            auto filename = _index->file->get_name();
+            _index.release();
+            remove_file(filename);
+        }
+    }
 
     // apis
     bool Index::has(std::shared_ptr<Field> key) const {

@@ -19,12 +19,15 @@ namespace Neru {
     private:
         std::string name;
         bool create;
+        friend class Index;
     };
     class Index {
     public:
         // constructors
         Index();
         Index(std::string name, bool create = false);
+
+        ~Index();
 
         // apis
         bool has(std::shared_ptr<Field> key) const;

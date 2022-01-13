@@ -56,7 +56,6 @@ struct txn_list{
             else if (lock_type == LockType::EXCLUSIVE){
                 txn->fetch_exclusive_lock(entry);
             }
-
         }
         else{
             // if it cannot be grant, wait
@@ -68,18 +67,38 @@ struct txn_list{
                 txn->fetch_exclusive_lock(entry);
             }
         }
-        
-        
     }
 
     bool check_grant(LockType lock_type){
         // only if there is no other txn has thae lock, exclusive lock/shared lock can be granted
         // TODO: whether to grant the lock to this txn
-        
+        if(lock_type == LockType::SHARED){
+            for(auto &item: txn_list_)
+                if(item.lock_type == LockType::EXCLUSIVE && item.granted)
+                    return false;
+            return true;
+        }
+        else{
+            for(auto &item: txn_list_)
+                if(item.granted)
+                    return false;
+            return true;
+        }
         return false;
     }
 
-
+    bool upgrade(std::shared_ptr<Transaction> txn, Entry entry){
+        std::list<txn_item>::iterator p = txn_list_.end();
+        for(auto i = txn_list_.begin(); i != txn_list_.end(); i++)
+            if(i->txn_id == txn->get_txn_id())
+                p = i;
+            else if(i->granted)
+                return false;
+        txn->fetch_exclusive_lock(entry);
+        txn->release_shared_lock(entry);
+        p->lock_type = LockType::EXCLUSIVE;
+        return true;
+    }
 };
 
 class LockTable {

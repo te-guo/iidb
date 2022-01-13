@@ -23,6 +23,9 @@ namespace Neru {
     FieldType DoubleField::type() const { return FieldType::DOUBLE; }
     size_t DoubleField::size() const { return Field::size(this->type()); }
     std::string DoubleField::info() const { return std::to_string(this->size()) + "\tDoubleField: " + std::to_string(_data); }
+    size_t DoubleField::hash() const {
+        return *(size_t*)(&_data);
+    }
 
     // operators
     DoubleField::operator double() const { return _data; }

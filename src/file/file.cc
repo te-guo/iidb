@@ -41,6 +41,9 @@ namespace Neru {
                 _info += ' ' + std::to_string(i);
         return _info;
     }
+    std::string File::get_name() const{
+        return _name;
+    }
 
     // operators
     std::ostream &operator<<(std::ostream &os, const File &file) { return os << file.info(); }
@@ -105,6 +108,12 @@ namespace Neru {
         if (idx >= _pages.size())
             throw std::runtime_error("File: Out of range!");
         return _pages[idx];
+    }
+
+    void remove_file(std::string name){
+        std::string path = std::filesystem::path(FILE_PREFIX) / name;
+        std::filesystem::remove(path + ".flag");
+        std::filesystem::remove(path + ".data");
     }
 
 }// namespace Neru

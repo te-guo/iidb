@@ -31,6 +31,7 @@ namespace Neru {
         static FileType type();
         size_t size() const;
         std::string info() const;
+        std::string get_name() const;
 
         // operators
         friend std::ostream &operator<<(std::ostream &os, const File &file);
@@ -50,6 +51,8 @@ namespace Neru {
         std::bitset<BLOCK_SIZE> _flag;
         std::vector<std::shared_ptr<Page>> _pages;
     };
+
+    void remove_file(std::string name);
 
 }// namespace Neru
 

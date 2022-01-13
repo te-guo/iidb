@@ -21,6 +21,7 @@ namespace Neru {
         FieldType type() const override;
         size_t size() const override;
         std::string info() const override;
+        size_t hash() const override;
 
         // operators
         operator int32_t() const;

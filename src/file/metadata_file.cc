@@ -3,7 +3,7 @@
 namespace Neru {
 
     // constructors
-    MetadataFile::MetadataFile(std::string name, Header head, bool create) : File(name, create) {
+    MetadataFile::MetadataFile(std::string name, Header head, bool create) : File(name + ".metadata", create) {
         _size = head.size();
         if (create){
             allocate();

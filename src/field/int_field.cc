@@ -23,6 +23,9 @@ namespace Neru {
     FieldType IntField::type() const { return FieldType::INT; }
     size_t IntField::size() const { return Field::size(this->type()); }
     std::string IntField::info() const { return std::to_string(this->size()) + "\tIntField: " + std::to_string(_data); }
+    size_t IntField::hash() const {
+        return _data;
+    }
 
     // operators
     IntField::operator int32_t() const { return _data; }
